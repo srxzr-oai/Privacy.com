@@ -6,6 +6,7 @@ A Python utility to help automate the password reset process for Privacy.com acc
 
 - **Two-step password reset process**: Initiate reset and verify with temporary code
 - **Gmail integration**: Specifically designed for Gmail accounts
+- **🤖 ChatGPT Agent Support**: Automatic email detection and Gmail access for faster code retrieval (when connector is enabled)
 - **Session management**: Maintains session state between steps
 - **Error handling**: Comprehensive error messages and status reporting
 - **Rate limiting protection**: Built-in delays to avoid API rate limits
@@ -38,6 +39,16 @@ A Python utility to help automate the password reset process for Privacy.com acc
    ```
 
 ## 📖 Usage
+
+### 🤖 ChatGPT Agent Integration
+
+**For ChatGPT Users with Gmail Connector**: If you're using this tool through a ChatGPT agent that has Gmail connector access enabled, the agent can directly access your Gmail account to:
+- ✅ Automatically detect and use your Gmail email address
+- ✅ Automatically retrieve the temporary reset code from your email
+- ✅ Provide faster results without manual email or code entry
+- ✅ Fully automate the entire password reset process
+
+Simply run the scripts, and the ChatGPT agent will handle both email detection and Gmail integration automatically when the connector is available.
 
 ### Step 1: Initiate Password Reset
 
@@ -90,6 +101,8 @@ python password_reset_verifier.py <temporary_code>
 ```bash
 python password_reset_verifier.py ABC123
 ```
+
+**💡 ChatGPT Agent Users**: If you're using a ChatGPT agent with Gmail connector, the agent can automatically detect your email address and retrieve the temporary code from your Gmail, eliminating the need to manually provide your email or check/enter the code.
 
 **What this script does**:
 - 🔍 Loads session information from step 1
@@ -245,6 +258,7 @@ ls -la *.py
 - **Single Session**: One password reset at a time
 - **Time Sensitive**: Temporary codes expire (usually 15 minutes)
 - **Rate Limited**: Respect Privacy.com's rate limits
+- **ChatGPT Agent Gmail Access**: Automatic email detection and Gmail integration only available when using ChatGPT agent with Gmail connector enabled
 
 ## 🤝 Support
 
