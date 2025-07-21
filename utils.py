@@ -10,13 +10,13 @@ from datetime import datetime, timedelta
 from config import EMAIL_PATTERNS, SECURITY_SETTINGS, SESSION_FILE
 
 
-def validate_email(email, gmail_only=True):
+def validate_email(email, supported_only=True):
     """
     Validate email address format
     
     Args:
         email (str): Email address to validate
-        gmail_only (bool): If True, only accept Gmail addresses
+        supported_only (bool): If True, only accept Gmail and OpenAI addresses
         
     Returns:
         tuple: (is_valid, error_message)
@@ -29,10 +29,10 @@ def validate_email(email, gmail_only=True):
     if not email:
         return False, "Email address cannot be empty"
     
-    if gmail_only:
-        pattern = EMAIL_PATTERNS["gmail"]
+    if supported_only:
+        pattern = EMAIL_PATTERNS["supported"]
         if not re.match(pattern, email):
-            return False, "Please provide a valid Gmail address (e.g., user@gmail.com)"
+            return False, "Please provide a valid Gmail (@gmail.com) or OpenAI (@openai.com) address"
     else:
         pattern = EMAIL_PATTERNS["general"]
         if not re.match(pattern, email):

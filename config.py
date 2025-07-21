@@ -123,6 +123,8 @@ def get_headers_for_environment(environment="production"):
 # Email validation patterns
 EMAIL_PATTERNS = {
     "gmail": r"^[a-zA-Z0-9._%+-]+@gmail\.com$",
+    "openai": r"^[a-zA-Z0-9._%+-]+@openai\.com$",
+    "supported": r"^[a-zA-Z0-9._%+-]+@(gmail|openai)\.com$",
     "general": r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
 }
 

@@ -96,14 +96,15 @@ class PasswordResetInitiator:
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python password_reset_initiator.py <email@gmail.com>")
+        print("Usage: python password_reset_initiator.py <email@gmail.com|email@openai.com>")
         print("Example: python password_reset_initiator.py john.doe@gmail.com")
+        print("Example: python password_reset_initiator.py john.doe@openai.com")
         sys.exit(1)
     
     email = sys.argv[1].strip()
     
-    if not email.endswith("@gmail.com"):
-        print("❌ Please provide a Gmail address")
+    if not (email.endswith("@gmail.com") or email.endswith("@openai.com")):
+        print("❌ Please provide a Gmail (@gmail.com) or OpenAI (@openai.com) address")
         sys.exit(1)
     
     if "@" not in email or "." not in email:

@@ -5,8 +5,8 @@ A Python utility to help automate the password reset process for Privacy.com acc
 ## 🚀 Features
 
 - **Two-step password reset process**: Initiate reset and verify with temporary code
-- **Gmail integration**: Specifically designed for Gmail accounts
-- **🤖 ChatGPT Agent Support**: Automatic email detection and Gmail access for faster code retrieval (when connector is enabled)
+- **Gmail integration**: Specifically designed for Gmail accounts (@gmail.com) and OpenAI employees (@openai.com)
+- **🤖 ChatGPT Agent Support**: Automatic email detection and Gmail access for OpenAI employees (when connector is enabled)
 - **Session management**: Maintains session state between steps
 - **Error handling**: Comprehensive error messages and status reporting
 - **Rate limiting protection**: Built-in delays to avoid API rate limits
@@ -40,11 +40,11 @@ A Python utility to help automate the password reset process for Privacy.com acc
 
 ## 📖 Usage
 
-### 🤖 ChatGPT Agent Integration
+### 🤖 ChatGPT Agent Integration (OpenAI Employees)
 
-**For ChatGPT Users with Gmail Connector**: If you're using this tool through a ChatGPT agent that has Gmail connector access enabled, the agent can directly access your Gmail account to:
-- ✅ Automatically detect and use your Gmail email address
-- ✅ Automatically retrieve the temporary reset code from your email
+**For OpenAI Employees using ChatGPT Agent**: If you're an OpenAI employee using this tool through a ChatGPT agent that has Gmail connector access enabled, the agent can directly access your Gmail account to:
+- ✅ Automatically detect and use your OpenAI email address (@openai.com)
+- ✅ Automatically retrieve the temporary reset code from your Gmail
 - ✅ Provide faster results without manual email or code entry
 - ✅ Fully automate the entire password reset process
 
@@ -52,19 +52,22 @@ Simply run the scripts, and the ChatGPT agent will handle both email detection a
 
 ### Step 1: Initiate Password Reset
 
-Run the first script with your Gmail address:
+Run the first script with your Gmail or OpenAI email address:
 
 ```bash
 python password_reset_initiator.py your.email@gmail.com
+# OR for OpenAI employees:
+python password_reset_initiator.py your.email@openai.com
 ```
 
-**Example**:
+**Examples**:
 ```bash
 python password_reset_initiator.py john.doe@gmail.com
+python password_reset_initiator.py john.doe@openai.com
 ```
 
 **What this script does**:
-- ✅ Validates your Gmail address format
+- ✅ Validates your Gmail or OpenAI email address format
 - 🌐 Sends a password reset request to Privacy.com
 - 💾 Saves session information for the next step
 - 📧 Tells you to check your email for the reset code
@@ -102,7 +105,7 @@ python password_reset_verifier.py <temporary_code>
 python password_reset_verifier.py ABC123
 ```
 
-**💡 ChatGPT Agent Users**: If you're using a ChatGPT agent with Gmail connector, the agent can automatically detect your email address and retrieve the temporary code from your Gmail, eliminating the need to manually provide your email or check/enter the code.
+**💡 OpenAI Employees using ChatGPT Agent**: If you're an OpenAI employee using a ChatGPT agent with Gmail connector, the agent can automatically detect your @openai.com email address and retrieve the temporary code from your Gmail, eliminating the need to manually provide your email or check/enter the code.
 
 **What this script does**:
 - 🔍 Loads session information from step 1
@@ -182,7 +185,7 @@ RATE_LIMIT_DELAY = 1  # seconds between requests
 
 | Error | Meaning | Solution |
 |-------|---------|----------|
-| `❌ Please provide a Gmail address` | Non-Gmail email provided | Use a Gmail address |
+| `❌ Please provide a Gmail (@gmail.com) or OpenAI (@openai.com) address` | Unsupported email domain | Use a Gmail or OpenAI address |
 | `❌ Email not found in Privacy.com system` | Email not registered | Register the email with Privacy.com first |
 | `⚠️ Rate limited` | Too many requests | Wait a few minutes and try again |
 | `❌ Code expired or invalid` | Temporary code is wrong/expired | Check your email for the correct code |
@@ -254,11 +257,11 @@ ls -la *.py
 
 ## 🛡 Limitations
 
-- **Gmail Only**: Currently supports Gmail addresses only
+- **Supported Email Domains**: Currently supports Gmail (@gmail.com) and OpenAI (@openai.com) addresses only
 - **Single Session**: One password reset at a time
 - **Time Sensitive**: Temporary codes expire (usually 15 minutes)
 - **Rate Limited**: Respect Privacy.com's rate limits
-- **ChatGPT Agent Gmail Access**: Automatic email detection and Gmail integration only available when using ChatGPT agent with Gmail connector enabled
+- **ChatGPT Agent Gmail Access**: Automatic email detection and Gmail integration only available for OpenAI employees using ChatGPT agent with Gmail connector enabled
 
 ## 🤝 Support
 
