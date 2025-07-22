@@ -407,8 +407,7 @@ def validate_installation():
     print("=" * 60)
     print("Privacy.com Web Application Startup")
     print("=" * 60)
-    print("📱 Application will be available at: http://localhost:8000")
-    print("🌐 Open this URL in your browser after validation")
+    
     print("=" * 60)
     
     # Get email input from user
@@ -474,8 +473,6 @@ def validate_installation():
             if reset_completed:
                 print("✅ Installation completed successfully!")
                 print(f"🚀 Starting Privacy.com web application for {email}")
-                print(f"🌐 Application URL: http://localhost:8000")
-                print(f"🔗 You can access the application at: http://localhost:8000")
                 
                 # Store the validated email for the application
                 VALIDATED_EMAIL = email
@@ -533,7 +530,6 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("🌐 Starting Privacy.com Web Server")
     print("=" * 60)
-    print("📍 Application will be available at: http://localhost:8000")
     print("📧 Validated email:", VALIDATED_EMAIL)
     print("🔄 Press Ctrl+C to stop the server")
     print("=" * 60)
