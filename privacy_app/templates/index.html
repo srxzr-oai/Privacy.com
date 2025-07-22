@@ -15,11 +15,11 @@
                     Protect your real card information and control your spending.
                 </p>
                 {% if not session.user_email %}
-                <a href="{{ url_for('login') }}" class="btn btn-light btn-lg">
+                <a href="{{ request.url_for('login_page') }}" class="btn btn-light btn-lg">
                     <i class="fas fa-sign-in-alt me-2"></i>Get Started
                 </a>
                 {% else %}
-                <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg">
+                <a href="{{ request.url_for('dashboard') }}" class="btn btn-light btn-lg">
                     <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
                 </a>
                 {% endif %}

@@ -6,12 +6,12 @@
     <title>{% block title %}Privacy.com{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ request.url_for('static', path='/css/style.css') }}" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
+            <a class="navbar-brand" href="{{ request.url_for('index') }}">
                 <i class="fas fa-credit-card me-2"></i>Privacy.com
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -20,11 +20,11 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                        <a class="nav-link" href="{{ request.url_for('index') }}">Home</a>
                     </li>
                     {% if session.user_email %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                        <a class="nav-link" href="{{ request.url_for('dashboard') }}">Dashboard</a>
                     </li>
                     {% endif %}
                 </ul>
@@ -35,14 +35,14 @@
                             <i class="fas fa-user me-1"></i>{{ session.user_email }}
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                            <li><a class="dropdown-item" href="{{ request.url_for('logout') }}">
                                 <i class="fas fa-sign-out-alt me-2"></i>Logout
                             </a></li>
                         </ul>
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('login') }}">
+                        <a class="nav-link" href="{{ request.url_for('login_page') }}">
                             <i class="fas fa-sign-in-alt me-1"></i>Login
                         </a>
                     </li>
@@ -53,19 +53,6 @@
     </nav>
 
     <main class="container mt-4">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="alerts">
-            {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
-
         {% block content %}{% endblock %}
     </main>
 
@@ -79,11 +66,11 @@
                 <div class="col-md-6">
                     <h6>Quick Links</h6>
                     <ul class="list-unstyled">
-                        <li><a href="{{ url_for('index') }}" class="text-muted">Home</a></li>
+                        <li><a href="{{ request.url_for('index') }}" class="text-muted">Home</a></li>
                         {% if session.user_email %}
-                        <li><a href="{{ url_for('dashboard') }}" class="text-muted">Dashboard</a></li>
+                        <li><a href="{{ request.url_for('dashboard') }}" class="text-muted">Dashboard</a></li>
                         {% else %}
-                        <li><a href="{{ url_for('login') }}" class="text-muted">Login</a></li>
+                        <li><a href="{{ request.url_for('login_page') }}" class="text-muted">Login</a></li>
                         {% endif %}
                     </ul>
                 </div>
@@ -96,7 +83,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ request.url_for('static', path='/js/app.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html> 
