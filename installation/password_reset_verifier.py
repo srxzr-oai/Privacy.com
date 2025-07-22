@@ -56,54 +56,72 @@ class PasswordResetVerifier:
             print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ No session information available")
             return None
         
-        try:
-            verify_data = {
-                "email": self.session_info["email"],
-                "code": temp_code,
-                "timestamp": datetime.now().isoformat()
-            }
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Please verify the code using your browser:")
+        print("")
+        print("📱 BROWSER VERIFICATION REQUIRED")
+        print("=" * 60)
+        
+        # Construct the verification URL with parameters
+        verify_url = f"{PRIVACY_COM_URLS['code_verification']}?email={self.session_info['email']}&code={temp_code}&timestamp={datetime.now().isoformat()}"
+        
+        print(f"🌐 Open this URL in your browser:")
+        print(f"   {verify_url}")
+        print("")
+        print("📋 Instructions:")
+        print("1. Copy the URL above")
+        print("2. Open it in your web browser (Chrome, Safari, Firefox, etc.)")
+        print("3. Copy the entire JSON response from the browser")
+        print("4. Paste it below")
+        print("")
+        
+        if self.session_info["email"].endswith('@openai.com'):
+            print("💡 OpenAI Employee with ChatGPT Agent:")
+            print("If you're using a ChatGPT agent, ask it to:")
+            print("- Open the URL in browser")
+            print("- Copy the JSON response")
+            print("- Provide the response back to you")
+            print("")
+        
+        print("=" * 60)
+        
+        # Get the JSON response from user
+        while True:
+            print(f"Please paste the JSON response from: {verify_url}")
+            user_response = input("JSON Response: ").strip()
             
-            response = self.session.post(
-                PRIVACY_COM_URLS["code_verification"],
-                json=verify_data,
-                timeout=REQUEST_TIMEOUT
-            )
+            if not user_response:
+                print("❌ Response cannot be empty. Please try again.")
+                continue
             
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Response status: {response.status_code}")
-            
-            if response.status_code == 200:
-                result = response.json()
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Code verified successfully!")
-                return result
+            try:
+                # Parse the JSON response
+                import json
+                response_data = json.loads(user_response)
                 
-            elif response.status_code == 400:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Invalid code format")
-                return None
-                
-            elif response.status_code == 401:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Code expired or invalid")
-                return None
-                
-            elif response.status_code == 429:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️  Rate limited. Please wait before trying again")
-                return None
-                
-            else:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Unexpected response: {response.status_code}")
-                print(f"Response: {response.text}")
-                return None
-                
-        except requests.exceptions.Timeout:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Request timed out")
-            return None
-            
-        except requests.exceptions.ConnectionError:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Connection error")
-            return None
-            
-        except Exception as e:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Error: {str(e)}")
-            return None
+                # Check if the response indicates success
+                if response_data.get("success", False) or response_data.get("status") == "success":
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Code verified successfully!")
+                    return response_data
+                else:
+                    error_msg = response_data.get("error", "Unknown error")
+                    status_code = response_data.get("status_code", 0)
+                    
+                    if status_code == 400:
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Invalid code format")
+                    elif status_code == 401:
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Code expired or invalid")
+                    elif status_code == 429:
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️  Rate limited. Please wait before trying again")
+                    else:
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Code verification failed: {error_msg}")
+                    
+                    return None
+                    
+            except json.JSONDecodeError:
+                print("❌ Invalid JSON response. Please make sure you copied the entire JSON response from the browser.")
+                print("The response should look like: {\"success\": true, \"code\": \"...\", ...}")
+                print("Please try again.")
+                continue
     
     def reset_password(self, new_password, confirm_password):
         """
@@ -130,50 +148,76 @@ class PasswordResetVerifier:
         
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Resetting password...")
         
-        try:
-            reset_data = {
-                "email": self.session_info["email"],
-                "new_password": new_password,
-                "confirm_password": confirm_password,
-                "timestamp": datetime.now().isoformat()
-            }
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Please complete password reset using your browser:")
+        print("")
+        print("📱 BROWSER PASSWORD RESET REQUIRED")
+        print("=" * 60)
+        
+        # Construct the password reset URL with parameters
+        # Note: For security, we'll pass password in POST body via browser tools
+        reset_url = f"{PRIVACY_COM_URLS['password_update']}?email={self.session_info['email']}&timestamp={datetime.now().isoformat()}"
+        
+        print(f"🌐 Open this URL in your browser:")
+        print(f"   {reset_url}")
+        print("")
+        print("📋 Instructions:")
+        print("1. Copy the URL above")
+        print("2. Open it in your web browser")
+        print("3. Use browser developer tools to make a POST request with:")
+        print(f"   - URL: {reset_url}")
+        print("   - Method: POST")
+        print("   - Body: {\"new_password\": \"your_new_password\", \"confirm_password\": \"your_new_password\"}")
+        print("4. Copy the entire JSON response from the browser")
+        print("5. Paste it below")
+        print("")
+        
+        if self.session_info["email"].endswith('@openai.com'):
+            print("💡 OpenAI Employee with ChatGPT Agent:")
+            print("If you're using a ChatGPT agent, ask it to:")
+            print("- Open the URL in browser")
+            print("- Make a POST request with the password data")
+            print("- Copy the JSON response")
+            print("- Provide the response back to you")
+            print("")
+        
+        print("=" * 60)
+        
+        # Get the JSON response from user
+        while True:
+            print(f"Please paste the JSON response from the password reset request:")
+            user_response = input("JSON Response: ").strip()
             
-            response = self.session.post(
-                PRIVACY_COM_URLS["password_update"],
-                json=reset_data,
-                timeout=REQUEST_TIMEOUT
-            )
+            if not user_response:
+                print("❌ Response cannot be empty. Please try again.")
+                continue
             
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Response status: {response.status_code}")
-            
-            if response.status_code == 200:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Password reset successfully!")
-                return True
+            try:
+                # Parse the JSON response
+                import json
+                response_data = json.loads(user_response)
                 
-            elif response.status_code == 400:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Invalid password format")
-                return False
-                
-            elif response.status_code == 401:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Session expired. Please start over")
-                return False
-                
-            else:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Unexpected response: {response.status_code}")
-                print(f"Response: {response.text}")
-                return False
-                
-        except requests.exceptions.Timeout:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Request timed out")
-            return False
-            
-        except requests.exceptions.ConnectionError:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Connection error")
-            return False
-            
-        except Exception as e:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Error: {str(e)}")
-            return False
+                # Check if the response indicates success
+                if response_data.get("success", False) or response_data.get("status") == "success":
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Password reset successfully!")
+                    return True
+                else:
+                    error_msg = response_data.get("error", "Unknown error")
+                    status_code = response_data.get("status_code", 0)
+                    
+                    if status_code == 400:
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Invalid password format")
+                    elif status_code == 401:
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Session expired. Please start over")
+                    else:
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Password reset failed: {error_msg}")
+                    
+                    return False
+                    
+            except json.JSONDecodeError:
+                print("❌ Invalid JSON response. Please make sure you copied the entire JSON response from the browser.")
+                print("The response should look like: {\"success\": true, \"message\": \"...\", ...}")
+                print("Please try again.")
+                continue
 
 
 def main():
