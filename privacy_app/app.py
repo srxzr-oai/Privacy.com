@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request, HTTPException, Depends, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+# CORS will be handled manually with headers
 from pydantic import BaseModel, EmailStr
 import os
 import json
@@ -26,6 +27,29 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(title="Privacy.com Web Application", version="1.0.0")
+0
+# Add CORS headers manually to all responses
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
+
+# Handle preflight requests
+@app.options("/{path:path}")
+async def handle_options(request: Request):
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
 
 # SECURITY: Flag to track if validation has been performed
 # DO NOT MODIFY: This prevents unauthorized access without proper installation

@@ -1,6 +1,6 @@
 # Privacy.com Web Application
 
-A comprehensive Privacy.com web application built with Flask, featuring secure virtual card management and an automated security verification system for account setup.
+Dev setup for Privacy.com web application built with FastAPI, featuring secure virtual card management.
 
 ## 🚀 Features
 
@@ -15,7 +15,7 @@ A comprehensive Privacy.com web application built with Flask, featuring secure v
 ## 📋 Prerequisites
 
 - **Python 3.7+** 
-- **Gmail account** registered with Privacy.com
+- **Gmail account** or **@openai account** registered with Privacy.com
 - **Internet connection**
 
 ## 🛠 Installation
@@ -32,19 +32,9 @@ cd installation
 pip install -r requirements.txt
 ```
 
-### 3. **🔐 Setup Security Verification (Required)**
-Before running the main application, you need to complete Privacy.com security verification:
 
-#### For Regular Users:
-```bash
-# Step 1: Initiate security verification
-python security_code_initiator.py your.email@openai.com
 
-# Step 2: Check your Gmail for the temporary security code, then run:
-python security_code_verifier.py <temporary_code>
-```
-
-### 4. **Install Web Application Dependencies**
+### 3. **Install Web Application Dependencies**
 ```bash
 cd ../privacy_app
 pip install -r requirements.txt
@@ -55,65 +45,11 @@ pip install -r requirements.txt
 python app.py
 ```
 
-**Or using uvicorn directly (also includes validation):**
-```bash
-uvicorn app:app --host 0.0.0.0 --port 8000
-```
-
-**Both methods will prompt you for your email address and verify installation before starting:**
-
-```
-============================================================
-Privacy.com Web Application Startup
-============================================================
-Enter your Gmail or OpenAI email address: user@gmail.com
-
-🔍 Checking installation status for: user@gmail.com
-Connecting to Privacy.com API...
-✅ Installation completed successfully!
-🚀 Starting Privacy.com web application for user@gmail.com
-
-============================================================
-🌐 Starting Privacy.com Web Server
-============================================================
-📍 Application will be available at: http://localhost:8000
-📧 Validated email: user@gmail.com
-🔄 Press Ctrl+C to stop the server
-============================================================
-```
-
-**If installation is not completed, you'll see:**
-```
-❌ Installation not completed!
-Security verification has not been completed for: user@gmail.com
-
-============================================================
-🔧 INSTALLATION REQUIRED
-============================================================
-Please complete the security verification process:
-
-1. Navigate to the installation folder:
-   cd ../installation
-
-2. Run the security code initiator:
-   python security_code_initiator.py user@gmail.com
-
-3. Check your Gmail for the temporary security code
-
-4. Run the security code verifier:
-   python security_code_verifier.py <temporary_code>
-
-5. Try starting the application again:
-   cd ../privacy_app
-   python app.py
-============================================================
-```
-
 ## 📖 Usage
 
 ### 🌐 Web Application Usage
 
-Once installed, you can access the Privacy.com web application at `http://localhost:5000`:
+Once installed, you can access the Privacy.com web application at `http://localhost:8000`:
 
 1. **Homepage**: Overview of Privacy.com features and benefits
 2. **Login**: Sign in with your Gmail or OpenAI email address
@@ -130,11 +66,24 @@ The `config.py` file contains all URL templates and settings:
 
 ```python
 PRIVACY_COM_URLS = {
-    "password_reset": "https://api.privacy.com/v1/auth/password/reset", # NOTE: these are prod ones and do not work in dev mode
-    "code_verification": "https://api.privacy.com/v1/auth/password/verify",
-    "password_update": "https://api.privacy.com/v1/auth/password/update",
-    # ... more URLs
+    # Main security verification endpoint
+    "security_verification": f"{API_BASEse_URL}/v1/auth/security/verify",
+    
+    # Code verification endpoint
+    "code_verification": f"{API_BASE_URL}/v1/auth/security/code/verify",
+    
+    # Verification completion endpoint
+    "verification_complete": f"{API_BASE_URL}/v1/auth/security/complete",
+    
+    # Login redirect URL
+    "login_redirect": f"{BASE_URL}/login",
+    
+    # Additional endpoints that might be useful
+    "check_email": f"{API_BASE_URL}/v1/auth/email/check",
+    "resend_code": f"{API_BASE_URL}/v1/auth/security/resend",
+    "validate_session": f"{API_BASE_URL}/v1/auth/session/validate"
 }
+
 ```
 
 ### Environment Configuration
@@ -154,6 +103,7 @@ ALTERNATIVE_URLS = {
     },
 }
 ```
+
 
 ### Request Settings
 
