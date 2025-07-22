@@ -4,8 +4,8 @@ Contains URL templates and default settings
 """
 
 # Base URLs for Privacy.com API endpoints
-BASE_URL = "http://app.privacy.srxzr.com"
-API_BASE_URL = "http://api.privacy.srxzr.com"
+BASE_URL = "http://app.privacy.srxzr.com" # TODO: Change to https://app.privacy.com after later for production
+API_BASE_URL = "http://api.privacy.srxzr.com" # TODO: Change to https://api.privacy.com after later for production
 
 # URL templates for different endpoints
 PRIVACY_COM_URLS = {

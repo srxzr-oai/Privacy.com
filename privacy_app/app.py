@@ -4,7 +4,7 @@ Privacy.com FastAPI Web Application
 Main web server for Privacy.com functionality
 """
 
-from fastapi import FastAPI, Request, Form, HTTPException, Depends, Cookie
+from fastapi import FastAPI, Request, HTTPException, Depends, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -41,7 +41,7 @@ sessions: Dict[str, Dict[str, Any]] = {}
 os.makedirs('./sessions/', exist_ok=True)
 
 # API Configuration
-API_BASE_URL = "https://api.privacy.srxzr.com"
+API_BASE_URL = "http://api.privacy.srxzr.com" # TODO: Change to https://api.privacy.com after later for production
 REQUEST_TIMEOUT = 30
 
 # Global validated email from startup
@@ -163,36 +163,23 @@ async def login_page(request: Request):
 
 
 @app.post("/login")
-async def login_post(
-    request: Request,
-    email: str = Form(...),
-    password: str = Form(...)
-):
-    """Handle login form submission"""
+async def login_post(request: Request, login_data: LoginRequest):
+    """Handle login JSON submission"""
     session_id = get_session_id(request)
+    
+    email = login_data.email
+    password = login_data.password
     
     # Validate input
     if not email or not password:
-        return templates.TemplateResponse("login.html", {
-            "request": request,
-            "error": "Please provide both email and password",
-            "validated_email": VALIDATED_EMAIL
-        })
+        raise HTTPException(status_code=400, detail="Please provide both email and password")
     
     if not (email.endswith('@gmail.com') or email.endswith('@openai.com')):
-        return templates.TemplateResponse("login.html", {
-            "request": request,
-            "error": "Please use a Gmail or OpenAI email address",
-            "validated_email": VALIDATED_EMAIL
-        })
+        raise HTTPException(status_code=400, detail="Please use a Gmail or OpenAI email address")
     
     # Check if this matches the validated email from startup
     if email != VALIDATED_EMAIL:
-        return templates.TemplateResponse("login.html", {
-            "request": request,
-            "error": f"Please use the validated email address: {VALIDATED_EMAIL}",
-            "validated_email": VALIDATED_EMAIL
-        })
+        raise HTTPException(status_code=400, detail=f"Please use the validated email address: {VALIDATED_EMAIL}")
     
     # TODO: Implement actual authentication with Privacy.com API
     # For now, simple validation since installation was already verified at startup
@@ -204,7 +191,8 @@ async def login_post(
     
     logger.info(f"User logged in: {email}")
     
-    response = RedirectResponse(url="/dashboard", status_code=302)
+    # Return JSON response for AJAX request
+    response = JSONResponse(content={"success": True, "redirect": "/dashboard"})
     response.set_cookie(key="session_id", value=session_id, httponly=True)
     return response
 
