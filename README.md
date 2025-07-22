@@ -70,7 +70,12 @@ pip install -r requirements.txt
 python app.py
 ```
 
-**The application will prompt you for your email address and verify installation before starting:**
+**Or using uvicorn directly (also includes validation):**
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+**Both methods will prompt you for your email address and verify installation before starting:**
 
 ```
 ============================================================

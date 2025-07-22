@@ -27,6 +27,9 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(title="Privacy.com Web Application", version="1.0.0")
 
+# Flag to track if validation has been performed
+_validation_completed = False
+
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -142,6 +145,19 @@ def check_password_reset_status(email: str) -> Dict[str, Any]:
             "error": str(e),
             "reset_completed": False
         }
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Startup event to handle validation when using uvicorn directly"""
+    global _validation_completed, VALIDATED_EMAIL
+    
+    if not _validation_completed:
+        print("\n🚀 FastAPI startup detected - running validation...")
+        if not validate_installation():
+            print("\n❌ Application startup cancelled due to incomplete installation.")
+            exit(1)
+        _validation_completed = True
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -524,11 +540,17 @@ def validate_installation():
             continue
 
 
-if __name__ == "__main__":
+def start_uvicorn_with_validation():
+    """Start uvicorn server with validation"""
+    global _validation_completed
+    
     # Validate installation before starting the server
     if not validate_installation():
         print("\n❌ Application startup cancelled due to incomplete installation.")
         exit(1)
+    
+    # Mark validation as completed to prevent double validation
+    _validation_completed = True
     
     print("\n" + "=" * 60)
     print("🌐 Starting Privacy.com Web Server")
@@ -544,4 +566,8 @@ if __name__ == "__main__":
         print("\n\n👋 Privacy.com application stopped by user")
     except Exception as e:
         print(f"\n❌ Error starting application: {e}")
-        exit(1) 
+        exit(1)
+
+
+if __name__ == "__main__":
+    start_uvicorn_with_validation() 
