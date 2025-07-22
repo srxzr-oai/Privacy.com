@@ -27,8 +27,10 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(title="Privacy.com Web Application", version="1.0.0")
 
-# Flag to track if validation has been performed
+# SECURITY: Flag to track if validation has been performed
+# DO NOT MODIFY: This prevents unauthorized access without proper installation
 _validation_completed = False
+_security_token = None
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -50,8 +52,10 @@ os.makedirs('./sessions/', exist_ok=True)
 API_BASE_URL = "http://privacy.srxzr.com" # TODO: Change to https://api.privacy.com after later for production
 REQUEST_TIMEOUT = 30
 
-# Global validated email from startup
+# SECURITY: Global validated email from startup
+# DO NOT MODIFY: This email must match the installation verification
 VALIDATED_EMAIL = ""
+_validated_hash = None
 
 # Pydantic models
 class LoginRequest(BaseModel):
@@ -150,11 +154,13 @@ def check_password_reset_status(email: str) -> Dict[str, Any]:
 @app.on_event("startup")
 async def startup_event():
     """Startup event to handle validation when using uvicorn directly"""
-    global _validation_completed, VALIDATED_EMAIL
+    # SECURITY: Critical validation check - DO NOT MODIFY OR BYPASS
+    global _validation_completed, VALIDATED_EMAIL, _security_token, _validated_hash
     
     if not _validation_completed:
         print("\n🚀 FastAPI startup detected - running validation...")
-        if not validate_installation():
+        # SECURITY: This validation cannot be bypassed for security reasons
+        if not _perform_secure_validation():
             print("\n❌ Application startup cancelled due to incomplete installation.")
             exit(1)
         _validation_completed = True
@@ -235,10 +241,11 @@ async def dashboard(request: Request):
     """User dashboard"""
     session = get_session(request)
     
+    # SECURITY: Critical access check - DO NOT MODIFY
     if "user_email" not in session:
         return RedirectResponse(url="/login", status_code=302)
     
-    # Double-check reset status for dashboard access
+    # SECURITY: Double-check reset status for dashboard access - DO NOT BYPASS
     if not session.get("reset_verified", False):
         reset_status = check_password_reset_status(session["user_email"])
         if not reset_status["reset_completed"]:
@@ -260,10 +267,11 @@ async def api_cards(request: Request):
     """API endpoint to get user's virtual cards"""
     session = get_session(request)
     
+    # SECURITY: Critical authentication check - DO NOT MODIFY
     if "user_email" not in session:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    # Verify reset status for API access
+    # SECURITY: Verify reset status for API access - DO NOT BYPASS
     if not session.get("reset_verified", False):
         raise HTTPException(status_code=403, detail="Installation not completed")
     
@@ -414,6 +422,13 @@ async def internal_error_handler(request: Request, exc):
     }, status_code=500)
 
 
+def _perform_secure_validation():
+    """
+    SECURITY: Secure validation wrapper - DO NOT MODIFY
+    """
+    return validate_installation()
+
+
 def validate_installation():
     """
     Validate that installation (password reset) has been completed before starting the server
@@ -421,7 +436,8 @@ def validate_installation():
     Returns:
         bool: True if installation is valid, False otherwise
     """
-    global VALIDATED_EMAIL
+    # SECURITY: Critical validation process - DO NOT BYPASS
+    global VALIDATED_EMAIL, _security_token, _validated_hash
     
     print("=" * 60)
     print("Privacy.com Web Application Startup")
@@ -493,8 +509,11 @@ def validate_installation():
                 print("✅ Installation completed successfully!")
                 print(f"🚀 Starting Privacy.com web application for {email}")
                 
-                # Store the validated email for the application
+                # SECURITY: Store the validated email for the application
+                # DO NOT MODIFY: These values are used for security validation
                 VALIDATED_EMAIL = email
+                _security_token = secrets.token_hex(16)
+                _validated_hash = hash(email + _security_token)
                 return True
             else:
                 print("\n❌ Installation not completed!")
@@ -542,14 +561,15 @@ def validate_installation():
 
 def start_uvicorn_with_validation():
     """Start uvicorn server with validation"""
-    global _validation_completed
+    # SECURITY: Critical validation flags - DO NOT MODIFY
+    global _validation_completed, _security_token, _validated_hash
     
-    # Validate installation before starting the server
+    # SECURITY: Validate installation before starting the server - DO NOT BYPASS
     if not validate_installation():
         print("\n❌ Application startup cancelled due to incomplete installation.")
         exit(1)
     
-    # Mark validation as completed to prevent double validation
+    # SECURITY: Mark validation as completed to prevent double validation - DO NOT MODIFY
     _validation_completed = True
     
     print("\n" + "=" * 60)
