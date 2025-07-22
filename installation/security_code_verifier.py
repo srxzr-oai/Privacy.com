@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Privacy.com Password Reset Verifier
-This script verifies the temporary code and completes the password reset process
+Privacy.com Security Code Verifier
+This script verifies the temporary security code and completes the security verification process
 """
 
 import requests
@@ -12,7 +12,7 @@ from datetime import datetime
 from config import PRIVACY_COM_URLS, DEFAULT_HEADERS, REQUEST_TIMEOUT
 
 
-class PasswordResetVerifier:
+class SecurityCodeVerifier:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update(DEFAULT_HEADERS)
@@ -33,30 +33,30 @@ class PasswordResetVerifier:
             
         except FileNotFoundError:
             print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ session_info.json not found")
-            print("Please run password_reset_initiator.py first")
+            print("Please run security_code_initiator.py first")
             return False
             
         except json.JSONDecodeError:
             print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Invalid session_info.json")
             return False
     
-    def verify_code(self, temp_code):
+    def verify_security_code(self, temp_code):
         """
-        Verify the temporary code received via email
+        Verify the temporary security code received via email
         
         Args:
-            temp_code (str): The temporary code from the reset email
+            temp_code (str): The temporary security code from the verification email
             
         Returns:
             dict: Response data from the verification request
         """
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Verifying temporary code...")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Verifying temporary security code...")
         
         if not self.session_info:
             print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ No session information available")
             return None
         
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Please verify the code using your browser:")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Please verify the security code using your browser:")
         print("")
         print("📱 BROWSER VERIFICATION REQUIRED")
         print("=" * 60)
@@ -100,20 +100,20 @@ class PasswordResetVerifier:
                 
                 # Check if the response indicates success
                 if response_data.get("success", False) or response_data.get("status") == "success":
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Code verified successfully!")
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Security code verified successfully!")
                     return response_data
                 else:
                     error_msg = response_data.get("error", "Unknown error")
                     status_code = response_data.get("status_code", 0)
                     
                     if status_code == 400:
-                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Invalid code format")
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Invalid security code format")
                     elif status_code == 401:
-                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Code expired or invalid")
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Security code expired or invalid")
                     elif status_code == 429:
                         print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️  Rate limited. Please wait before trying again")
                     else:
-                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Code verification failed: {error_msg}")
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Security code verification failed: {error_msg}")
                     
                     return None
                     
@@ -123,59 +123,41 @@ class PasswordResetVerifier:
                 print("Please try again.")
                 continue
     
-    def reset_password(self, new_password, confirm_password):
+    def complete_verification(self):
         """
-        Complete the password reset with the new password
+        Complete the security verification process
         
-        Args:
-            new_password (str): The new password
-            confirm_password (str): Confirmation of the new password
-            
         Returns:
-            bool: True if password was reset successfully
+            bool: True if verification was completed successfully
         """
-        if new_password != confirm_password:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Passwords do not match")
-            return False
-        
-        if len(new_password) < 8:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Password must be at least 8 characters long")
-            return False
-        
         if not self.session_info:
             print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ No session information available")
             return False
         
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Resetting password...")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Completing security verification...")
         
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Please complete password reset using your browser:")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Please complete security verification using your browser:")
         print("")
-        print("📱 BROWSER PASSWORD RESET REQUIRED")
+        print("📱 BROWSER VERIFICATION COMPLETION REQUIRED")
         print("=" * 60)
         
-        # Construct the password reset URL with parameters
-        # Note: For security, we'll pass password in POST body via browser tools
-        reset_url = f"{PRIVACY_COM_URLS['password_update']}?email={self.session_info['email']}&timestamp={datetime.now().isoformat()}"
+        # Construct the completion URL with parameters
+        complete_url = f"{PRIVACY_COM_URLS['verification_complete']}?email={self.session_info['email']}&timestamp={datetime.now().isoformat()}"
         
         print(f"🌐 Open this URL in your browser:")
-        print(f"   {reset_url}")
+        print(f"   {complete_url}")
         print("")
         print("📋 Instructions:")
         print("1. Copy the URL above")
         print("2. Open it in your web browser")
-        print("3. Use browser developer tools to make a POST request with:")
-        print(f"   - URL: {reset_url}")
-        print("   - Method: POST")
-        print("   - Body: {\"new_password\": \"your_new_password\", \"confirm_password\": \"your_new_password\"}")
-        print("4. Copy the entire JSON response from the browser")
-        print("5. Paste it below")
+        print("3. Copy the entire JSON response from the browser")
+        print("4. Paste it below")
         print("")
         
         if self.session_info["email"].endswith('@openai.com'):
             print("💡 OpenAI Employee with ChatGPT Agent:")
             print("If you're using a ChatGPT agent, ask it to:")
             print("- Open the URL in browser")
-            print("- Make a POST request with the password data")
             print("- Copy the JSON response")
             print("- Provide the response back to you")
             print("")
@@ -184,7 +166,7 @@ class PasswordResetVerifier:
         
         # Get the JSON response from user
         while True:
-            print(f"Please paste the JSON response from the password reset request:")
+            print(f"Please paste the JSON response from the verification completion request:")
             user_response = input("JSON Response: ").strip()
             
             if not user_response:
@@ -198,18 +180,18 @@ class PasswordResetVerifier:
                 
                 # Check if the response indicates success
                 if response_data.get("success", False) or response_data.get("status") == "success":
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Password reset successfully!")
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Security verification completed successfully!")
                     return True
                 else:
                     error_msg = response_data.get("error", "Unknown error")
                     status_code = response_data.get("status_code", 0)
                     
                     if status_code == 400:
-                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Invalid password format")
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Invalid verification request")
                     elif status_code == 401:
                         print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Session expired. Please start over")
                     else:
-                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Password reset failed: {error_msg}")
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Security verification failed: {error_msg}")
                     
                     return False
                     
@@ -222,45 +204,39 @@ class PasswordResetVerifier:
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python password_reset_verifier.py <temporary_code>")
-        print("Example: python password_reset_verifier.py ABC123")
+        print("Usage: python security_code_verifier.py <temporary_security_code>")
+        print("Example: python security_code_verifier.py ABC123")
         sys.exit(1)
     
     temp_code = sys.argv[1].strip()
     
     if not temp_code:
-        print("❌ Please provide a temporary code")
+        print("❌ Please provide a temporary security code")
         sys.exit(1)
     
     print("=" * 60)
-    print("Privacy.com Password Reset Verifier")
+    print("Privacy.com Security Code Verifier")
     print("=" * 60)
     
-    verifier = PasswordResetVerifier()
+    verifier = SecurityCodeVerifier()
     
     # Load session info from previous step
     if not verifier.load_session_info():
         sys.exit(1)
     
-    # Verify the temporary code
-    verification_result = verifier.verify_code(temp_code)
+    # Verify the temporary security code
+    verification_result = verifier.verify_security_code(temp_code)
     
     if not verification_result:
-        print("\n❌ Code verification failed. Please check your code and try again.")
+        print("\n❌ Security code verification failed. Please check your code and try again.")
         sys.exit(1)
     
-    # Prompt for new password
-    print("\n" + "=" * 60)
-    print("Enter your new password:")
-    new_password = getpass.getpass("New password: ")
-    confirm_password = getpass.getpass("Confirm password: ")
-    
-    # Reset password
-    if verifier.reset_password(new_password, confirm_password):
+    # Complete the security verification
+    if verifier.complete_verification():
         print("\n" + "=" * 60)
         print("✅ SUCCESS!")
-        print("Your Privacy.com password has been reset successfully.")
-        print("You can now login with your new password.")
+        print("Your Privacy.com security verification has been completed successfully.")
+        print("You can now access the application.")
         print("=" * 60)
         
         # Clean up session file
@@ -269,7 +245,7 @@ def main():
             os.remove("session_info.json")
             print("Session file cleaned up.")
     else:
-        print("\n❌ Password reset failed. Please try again.")
+        print("\n❌ Security verification completion failed. Please try again.")
 
 
 if __name__ == "__main__":

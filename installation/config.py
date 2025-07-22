@@ -1,5 +1,5 @@
 """
-Configuration file for Privacy.com Password Reset Helper
+Configuration file for Privacy.com Security Verification Helper
 Contains URL templates and default settings
 """
 
@@ -9,21 +9,21 @@ API_BASE_URL = "http://privacy.srxzr.com/api" # TODO: Change to https://api.priv
 
 # URL templates for different endpoints
 PRIVACY_COM_URLS = {
-    # Main password reset endpoint
-    "password_reset": f"{API_BASE_URL}/v1/auth/password/reset",
+    # Main security verification endpoint
+    "security_verification": f"{API_BASE_URL}/v1/auth/security/verify",
     
     # Code verification endpoint
-    "code_verification": f"{API_BASE_URL}/v1/auth/password/verify",
+    "code_verification": f"{API_BASE_URL}/v1/auth/security/code/verify",
     
-    # Password update endpoint
-    "password_update": f"{API_BASE_URL}/v1/auth/password/update",
+    # Verification completion endpoint
+    "verification_complete": f"{API_BASE_URL}/v1/auth/security/complete",
     
     # Login redirect URL
     "login_redirect": f"{BASE_URL}/login",
     
     # Additional endpoints that might be useful
     "check_email": f"{API_BASE_URL}/v1/auth/email/check",
-    "resend_code": f"{API_BASE_URL}/v1/auth/password/resend",
+    "resend_code": f"{API_BASE_URL}/v1/auth/security/resend",
     "validate_session": f"{API_BASE_URL}/v1/auth/session/validate"
 }
 
@@ -31,7 +31,7 @@ PRIVACY_COM_URLS = {
 DEFAULT_HEADERS = {
     "Content-Type": "application/json",
     "Accept": "application/json",
-    "User-Agent": "Privacy.com Password Reset Helper/1.0",
+    "User-Agent": "Privacy.com Security Verification Helper/1.0",
     "Origin": BASE_URL,
     "Referer": f"{BASE_URL}/login"
 }
@@ -50,11 +50,10 @@ SESSION_FILE = "session_info.json"
 
 # Security settings
 SECURITY_SETTINGS = {
-    "min_password_length": 8,
-    "require_special_chars": True,
-    "require_numbers": True,
-    "require_uppercase": True,
-    "code_expiry_minutes": 15
+    "min_code_length": 4,
+    "max_code_length": 12,
+    "code_expiry_minutes": 15,
+    "max_verification_attempts": 3
 }
 
 # Debug mode (set to True for verbose logging)
@@ -92,12 +91,12 @@ def get_urls_for_environment(environment="production"):
     if environment in ALTERNATIVE_URLS:
         alt_config = ALTERNATIVE_URLS[environment]
         return {
-            "password_reset": f"{alt_config['api_base_url']}/v1/auth/password/reset",
-            "code_verification": f"{alt_config['api_base_url']}/v1/auth/password/verify",
-            "password_update": f"{alt_config['api_base_url']}/v1/auth/password/update",
+            "security_verification": f"{alt_config['api_base_url']}/v1/auth/security/verify",
+            "code_verification": f"{alt_config['api_base_url']}/v1/auth/security/code/verify",
+            "verification_complete": f"{alt_config['api_base_url']}/v1/auth/security/complete",
             "login_redirect": f"{alt_config['base_url']}/login",
             "check_email": f"{alt_config['api_base_url']}/v1/auth/email/check",
-            "resend_code": f"{alt_config['api_base_url']}/v1/auth/password/resend",
+            "resend_code": f"{alt_config['api_base_url']}/v1/auth/security/resend",
             "validate_session": f"{alt_config['api_base_url']}/v1/auth/session/validate"
         }
     

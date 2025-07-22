@@ -1,5 +1,5 @@
 """
-Utility functions for Privacy.com Password Reset Helper
+Utility functions for Privacy.com Security Verification Helper
 Contains validation, logging, and helper functions
 """
 
@@ -41,62 +41,58 @@ def validate_email(email, supported_only=True):
     return True, None
 
 
-def validate_password(password):
+def validate_security_code(code):
     """
-    Validate password strength based on security settings
+    Validate security code format based on security settings
     
     Args:
-        password (str): Password to validate
+        code (str): Security code to validate
         
     Returns:
         tuple: (is_valid, error_messages_list)
     """
-    if not password:
-        return False, ["Password is required"]
+    if not code:
+        return False, ["Security code is required"]
     
     errors = []
     settings = SECURITY_SETTINGS
     
     # Check minimum length
-    if len(password) < settings["min_password_length"]:
-        errors.append(f"Password must be at least {settings['min_password_length']} characters long")
+    if len(code) < settings["min_code_length"]:
+        errors.append(f"Security code must be at least {settings['min_code_length']} characters long")
     
-    # Check for uppercase letters
-    if settings["require_uppercase"] and not re.search(r'[A-Z]', password):
-        errors.append("Password must contain at least one uppercase letter")
+    # Check maximum length
+    if len(code) > settings["max_code_length"]:
+        errors.append(f"Security code must be no more than {settings['max_code_length']} characters long")
     
-    # Check for numbers
-    if settings["require_numbers"] and not re.search(r'\d', password):
-        errors.append("Password must contain at least one number")
-    
-    # Check for special characters
-    if settings["require_special_chars"] and not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-        errors.append("Password must contain at least one special character")
+    # Check for valid characters (alphanumeric only)
+    if not re.match(r'^[A-Za-z0-9]+$', code):
+        errors.append("Security code must contain only letters and numbers")
     
     return len(errors) == 0, errors
 
 
-def validate_temporary_code(code):
+def validate_temporary_security_code(code):
     """
-    Validate temporary code format
+    Validate temporary security code format
     
     Args:
-        code (str): Temporary code to validate
+        code (str): Temporary security code to validate
         
     Returns:
         tuple: (is_valid, error_message)
     """
     if not code or not isinstance(code, str):
-        return False, "Temporary code is required"
+        return False, "Temporary security code is required"
     
     code = code.strip().upper()
     
     if not code:
-        return False, "Temporary code cannot be empty"
+        return False, "Temporary security code cannot be empty"
     
     # Basic format validation (alphanumeric, 4-10 characters)
     if not re.match(r'^[A-Z0-9]{4,10}$', code):
-        return False, "Temporary code must be 4-10 alphanumeric characters"
+        return False, "Temporary security code must be 4-10 alphanumeric characters"
     
     return True, None
 
@@ -265,11 +261,11 @@ def print_next_steps(steps_list):
 
 def get_user_input(prompt, hidden=False):
     """
-    Get user input with optional hidden input for passwords
+    Get user input with optional hidden input for sensitive data
     
     Args:
         prompt (str): Input prompt
-        hidden (bool): If True, hide input (for passwords)
+        hidden (bool): If True, hide input (for sensitive data)
         
     Returns:
         str: User input

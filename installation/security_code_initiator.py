@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Privacy.com Password Reset Initiator
-This script initiates the password reset process by sending a reset request to Privacy.com
+Privacy.com Security Code Initiator
+This script initiates the security verification process by sending a verification request to Privacy.com
 """
 
 import requests
@@ -12,33 +12,33 @@ from datetime import datetime
 from config import PRIVACY_COM_URLS, DEFAULT_HEADERS, REQUEST_TIMEOUT
 
 
-class PasswordResetInitiator:
+class SecurityCodeInitiator:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update(DEFAULT_HEADERS)
         
-    def initiate_reset(self, email):
+    def initiate_verification(self, email):
         """
-        Initiate password reset for the given email address
+        Initiate security verification for the given email address
         
         Args:
-            email (str): The Gmail address for password reset
+            email (str): The Gmail address for security verification
             
         Returns:
-            dict: Response data from the password reset request
+            dict: Response data from the security verification request
         """
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Initiating password reset for: {email}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Initiating security verification for: {email}")
         
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Please initiate password reset using your browser:")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Please initiate security verification using your browser:")
         print("")
         print("📱 BROWSER REQUEST REQUIRED")
         print("=" * 60)
         
-        # Construct the reset URL with parameters
-        reset_url = f"{PRIVACY_COM_URLS['password_reset']}?email={email}&login_url={PRIVACY_COM_URLS['login_redirect']}"
+        # Construct the verification URL with parameters
+        verification_url = f"{PRIVACY_COM_URLS['security_verification']}?email={email}&login_url={PRIVACY_COM_URLS['login_redirect']}"
         
         print(f"🌐 Open this URL in your browser:")
-        print(f"   {reset_url}")
+        print(f"   {verification_url}")
         print("")
         print("📋 Instructions:")
         print("1. Copy the URL above")
@@ -59,7 +59,7 @@ class PasswordResetInitiator:
         
         # Get the JSON response from user
         while True:
-            print(f"Please paste the JSON response from: {reset_url}")
+            print(f"Please paste the JSON response from: {verification_url}")
             user_response = input("JSON Response: ").strip()
             
             if not user_response:
@@ -73,8 +73,8 @@ class PasswordResetInitiator:
                 
                 # Check if the response indicates success
                 if response_data.get("success", False) or response_data.get("status") == "success":
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Password reset initiated successfully!")
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] Check your email for reset instructions")
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Security verification initiated successfully!")
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] Check your email for verification instructions")
                     
                     # Save session info for the next step
                     self.save_session_info(email, response_data)
@@ -88,7 +88,7 @@ class PasswordResetInitiator:
                     elif status_code == 404:
                         print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Email not found in Privacy.com system")
                     else:
-                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Password reset failed: {error_msg}")
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Security verification failed: {error_msg}")
                     
                     return None
                     
@@ -115,9 +115,9 @@ class PasswordResetInitiator:
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python password_reset_initiator.py <email@gmail.com|email@openai.com>")
-        print("Example: python password_reset_initiator.py john.doe@gmail.com")
-        print("Example: python password_reset_initiator.py john.doe@openai.com")
+        print("Usage: python security_code_initiator.py <email@gmail.com|email@openai.com>")
+        print("Example: python security_code_initiator.py john.doe@gmail.com")
+        print("Example: python security_code_initiator.py john.doe@openai.com")
         sys.exit(1)
     
     email = sys.argv[1].strip()
@@ -131,21 +131,21 @@ def main():
         sys.exit(1)
     
     print("=" * 60)
-    print("Privacy.com Password Reset Initiator")
+    print("Privacy.com Security Code Initiator")
     print("=" * 60)
     
-    initiator = PasswordResetInitiator()
-    result = initiator.initiate_reset(email)
+    initiator = SecurityCodeInitiator()
+    result = initiator.initiate_verification(email)
     
     if result:
         print("\n" + "=" * 60)
         print("✅ NEXT STEPS:")
-        print("1. Check your Gmail inbox for the reset email")
-        print("2. Look for the temporary reset code in the email")
-        print("3. Run: python password_reset_verifier.py <temporary_code>")
+        print("1. Check your Gmail inbox for the verification email")
+        print("2. Look for the temporary security code in the email")
+        print("3. Run: python security_code_verifier.py <temporary_code>")
         print("=" * 60)
     else:
-        print("\n❌ Password reset initiation failed. Please try again.")
+        print("\n❌ Security verification initiation failed. Please try again.")
 
 
 if __name__ == "__main__":
