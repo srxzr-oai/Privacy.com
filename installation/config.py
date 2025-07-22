@@ -69,6 +69,10 @@ ALTERNATIVE_URLS = {
     "development": {
         "base_url": "https://dev.privacy.srxzr.com",
         "api_base_url": "https://dev-api.privacy.com"
+    },
+    "production": {
+        "base_url": "https://privacy.com",
+        "api_base_url": "https://api.privacy.com"
     }
 }
 

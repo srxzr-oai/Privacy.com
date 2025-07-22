@@ -34,7 +34,7 @@ Session(app)
 os.makedirs('./flask_session/', exist_ok=True)
 
 # API Configuration
-API_BASE_URL = "http://api.privacy.srxzr.com"
+API_BASE_URL = "http://api.privacy.dev.srxzr.com" # TODO: Change to https://api.privacy.com after later update
 REQUEST_TIMEOUT = 30
 
 
