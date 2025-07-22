@@ -63,12 +63,12 @@ DEBUG_MODE = False
 # Alternative URL templates for testing or different environments
 ALTERNATIVE_URLS = {
     "staging": {
-        "base_url": "https://staging.privacy.srxzr.com",
-        "api_base_url": "https://staging-api.privacy.srxzr.com"
+        "base_url": "https://privacy.srxzr.com/staging",
+        "api_base_url": "https://privacy.srxzr.com/staging/api"
     },
     "development": {
-        "base_url": "https://dev.privacy.srxzr.com",
-        "api_base_url": "https://dev-api.privacy.com"
+        "base_url": "https://privacy.srxzr.com/dev",
+        "api_base_url": "https://privacy.srxzr.com/dev/api"
     },
     "production": {
         "base_url": "https://privacy.com",

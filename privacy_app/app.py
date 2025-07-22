@@ -41,7 +41,7 @@ sessions: Dict[str, Dict[str, Any]] = {}
 os.makedirs('./sessions/', exist_ok=True)
 
 # API Configuration
-API_BASE_URL = "http://api.privacy.srxzr.com" # TODO: Change to https://api.privacy.com after later for production
+API_BASE_URL = "http://privacy.srxzr.com" # TODO: Change to https://api.privacy.com after later for production
 REQUEST_TIMEOUT = 30
 
 # Global validated email from startup
