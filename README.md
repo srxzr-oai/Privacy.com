@@ -38,7 +38,7 @@ Before running the main application, you need to complete Privacy.com security v
 #### For Regular Users:
 ```bash
 # Step 1: Initiate security verification
-python security_code_initiator.py your.email@gmail.com
+python security_code_initiator.py your.email@openai.com
 
 # Step 2: Check your Gmail for the temporary security code, then run:
 python security_code_verifier.py <temporary_code>
