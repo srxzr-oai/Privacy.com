@@ -70,7 +70,54 @@ pip install -r requirements.txt
 python app.py
 ```
 
-The application will be available at `http://localhost:5000`
+**The application will prompt you for your email address and verify installation before starting:**
+
+```
+============================================================
+Privacy.com Web Application Startup
+============================================================
+Enter your Gmail or OpenAI email address: user@gmail.com
+
+🔍 Checking installation status for: user@gmail.com
+Connecting to Privacy.com API...
+✅ Installation completed successfully!
+🚀 Starting Privacy.com web application for user@gmail.com
+
+============================================================
+🌐 Starting Privacy.com Web Server
+============================================================
+📍 Application will be available at: http://localhost:5000
+📧 Validated email: user@gmail.com
+🔄 Press Ctrl+C to stop the server
+============================================================
+```
+
+**If installation is not completed, you'll see:**
+```
+❌ Installation not completed!
+Password reset has not been completed for: user@gmail.com
+
+============================================================
+🔧 INSTALLATION REQUIRED
+============================================================
+Please complete the password reset process:
+
+1. Navigate to the installation folder:
+   cd ../installation
+
+2. Run the password reset initiator:
+   python password_reset_initiator.py user@gmail.com
+
+3. Check your Gmail for the temporary code
+
+4. Run the password reset verifier:
+   python password_reset_verifier.py <temporary_code>
+
+5. Try starting the application again:
+   cd ../privacy_app
+   python app.py
+============================================================
+```
 
 ## 📖 Usage
 

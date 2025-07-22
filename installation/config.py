@@ -4,8 +4,8 @@ Contains URL templates and default settings
 """
 
 # Base URLs for Privacy.com API endpoints
-BASE_URL = "https://app.privacy.srxzr.com"
-API_BASE_URL = "https://api.privacy.srxzr.com"
+BASE_URL = "http://app.privacy.srxzr.com"
+API_BASE_URL = "http://api.privacy.srxzr.com"
 
 # URL templates for different endpoints
 PRIVACY_COM_URLS = {
@@ -63,11 +63,11 @@ DEBUG_MODE = False
 # Alternative URL templates for testing or different environments
 ALTERNATIVE_URLS = {
     "staging": {
-        "base_url": "https://staging.privacy.com",
-        "api_base_url": "https://staging-api.privacy.com"
+        "base_url": "https://staging.privacy.srxzr.com",
+        "api_base_url": "https://staging-api.privacy.srxzr.com"
     },
     "development": {
-        "base_url": "https://dev.privacy.com",
+        "base_url": "https://dev.privacy.srxzr.com",
         "api_base_url": "https://dev-api.privacy.com"
     }
 }
