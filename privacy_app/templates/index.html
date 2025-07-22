@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy.com - Secure Virtual Cards{% endblock %}
+
+{% block content %}
+<div class="hero-section bg-primary text-white py-5 mb-5 rounded">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="fas fa-credit-card me-3"></i>Privacy.com
+                </h1>
+                <p class="lead mb-4">
+                    Generate secure virtual cards for safe online shopping. 
+                    Protect your real card information and control your spending.
+                </p>
+                {% if not session.user_email %}
+                <a href="{{ url_for('login') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-sign-in-alt me-2"></i>Get Started
+                </a>
+                {% else %}
+                <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                </a>
+                {% endif %}
+            </div>
+            <div class="col-lg-6">
+                <div class="text-center">
+                    <i class="fas fa-shield-alt" style="font-size: 8rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h2 class="text-center mb-5">Why Choose Privacy.com?</h2>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="feature-icon bg-primary text-white rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-lock fa-lg"></i>
+                            </div>
+                            <h5 class="card-title">Secure</h5>
+                            <p class="card-text text-muted">
+                                Keep your real card information safe from data breaches and fraud.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="feature-icon bg-success text-white rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-sliders-h fa-lg"></i>
+                            </div>
+                            <h5 class="card-title">Control</h5>
+                            <p class="card-text text-muted">
+                                Set spending limits and pause/close cards instantly whenever you want.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="feature-icon bg-info text-white rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-eye fa-lg"></i>
+                            </div>
+                            <h5 class="card-title">Visibility</h5>
+                            <p class="card-text text-muted">
+                                Track all your transactions and see exactly where your money goes.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-5">
+        <div class="col-lg-10 mx-auto">
+            <div class="card border-0 shadow">
+                <div class="card-body p-5">
+                    <h3 class="text-center mb-4">How It Works</h3>
+                    <div class="row g-4">
+                        <div class="col-md-3 text-center">
+                            <div class="step-number bg-primary text-white rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <strong>1</strong>
+                            </div>
+                            <h6>Sign Up</h6>
+                            <p class="text-muted small">Create your Privacy.com account</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="step-number bg-primary text-white rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <strong>2</strong>
+                            </div>
+                            <h6>Create Cards</h6>
+                            <p class="text-muted small">Generate virtual cards instantly</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="step-number bg-primary text-white rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <strong>3</strong>
+                            </div>
+                            <h6>Shop Safely</h6>
+                            <p class="text-muted small">Use virtual cards for online purchases</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="step-number bg-primary text-white rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <strong>4</strong>
+                            </div>
+                            <h6>Stay Protected</h6>
+                            <p class="text-muted small">Monitor and control your spending</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
