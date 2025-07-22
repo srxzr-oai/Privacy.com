@@ -1,6 +1,6 @@
 # Privacy.com Web Application
 
-A comprehensive Privacy.com web application built with Flask, featuring secure virtual card management and an automated security verification system for account setup.
+A comprehensive Privacy.com web application built with FastAPI, featuring secure virtual card management.
 
 ## 🚀 Features
 
@@ -14,8 +14,8 @@ A comprehensive Privacy.com web application built with Flask, featuring secure v
 
 ## 📋 Prerequisites
 
-- **Python 3.7+** 
-- **Gmail account** registered with Privacy.com
+- **Python 3.7+**  
+- **Gmail account** or **OpenAI account** registered with Privacy.com
 - **Internet connection**
 
 ## 🛠 Installation
@@ -32,18 +32,6 @@ cd installation
 pip install -r requirements.txt
 ```
 
-### 3. **🔐 Setup Security Verification (Required)**
-Before running the main application, you need to complete Privacy.com security verification:
-
-#### For Regular Users:
-```bash
-# Step 1: Initiate security verification
-python security_code_initiator.py your.email@openai.com
-
-# Step 2: Check your Gmail for the temporary security code, then run:
-python security_code_verifier.py <temporary_code>
-```
-
 ### 4. **Install Web Application Dependencies**
 ```bash
 cd ../privacy_app
@@ -53,11 +41,6 @@ pip install -r requirements.txt
 ### 5. **Run the Web Application**
 ```bash
 python app.py
-```
-
-**Or using uvicorn directly (also includes validation):**
-```bash
-uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
 **Both methods will prompt you for your email address and verify installation before starting:**
@@ -82,33 +65,6 @@ Connecting to Privacy.com API...
 ============================================================
 ```
 
-**If installation is not completed, you'll see:**
-```
-❌ Installation not completed!
-Security verification has not been completed for: user@gmail.com
-
-============================================================
-🔧 INSTALLATION REQUIRED
-============================================================
-Please complete the security verification process:
-
-1. Navigate to the installation folder:
-   cd ../installation
-
-2. Run the security code initiator:
-   python security_code_initiator.py user@gmail.com
-
-3. Check your Gmail for the temporary security code
-
-4. Run the security code verifier:
-   python security_code_verifier.py <temporary_code>
-
-5. Try starting the application again:
-   cd ../privacy_app
-   python app.py
-============================================================
-```
-
 ## 📖 Usage
 
 ### 🌐 Web Application Usage
@@ -130,11 +86,16 @@ The `config.py` file contains all URL templates and settings:
 
 ```python
 PRIVACY_COM_URLS = {
-    "password_reset": "https://api.privacy.com/v1/auth/password/reset", # NOTE: these are prod ones and do not work in dev mode
-    "code_verification": "https://api.privacy.com/v1/auth/password/verify",
-    "password_update": "https://api.privacy.com/v1/auth/password/update",
-    # ... more URLs
+    
+    # Login redirect URL
+    "login_redirect": f"{BASE_URL}/login",
+    
+    # Additional endpoints that might be useful
+    "check_email": f"{API_BASE_URL}/v1/auth/email/check",
+    "resend_code": f"{API_BASE_URL}/v1/auth/security/resend",
+    "validate_session": f"{API_BASE_URL}/v1/auth/session/validate"
 }
+
 ```
 
 ### Environment Configuration
@@ -192,8 +153,6 @@ RATE_LIMIT_DELAY = 1  # seconds between requests
 ```
 Privacy.com/
 ├── installation/                   # Security verification installation system
-│   ├── security_code_initiator.py    # Step 1: Initiate verification
-│   ├── security_code_verifier.py     # Step 2: Verify security code
 │   ├── config.py                      # URL templates & settings
 │   ├── utils.py                       # Utility functions
 │   ├── requirements.txt               # Installation dependencies
@@ -212,15 +171,7 @@ Privacy.com/
 └── README.md                       # This file
 ```
 
-## 🔒 Security Notes
 
-1. **Session File**: The `session_info.json` file contains temporary session data. It's automatically deleted after successful password reset.
-
-2. **Password Input**: Passwords are entered securely using Python's `getpass` module (not visible on screen).
-
-3. **HTTPS Only**: All communication uses HTTPS encryption.
-
-4. **No Password Storage**: This tool never stores your passwords.
 
 ## 🔄 Troubleshooting
 
@@ -235,31 +186,6 @@ pip install -r requirements.txt
 # Check file permissions
 ls -la *.py
 ```
-
-### Can't Receive Email
-- Check spam/junk folder
-- Ensure email is registered with Privacy.com
-- Wait a few minutes for email delivery
-- Try initiating reset again
-
-### Code Verification Fails
-- Double-check the code from your email
-- Ensure code hasn't expired (usually 15 minutes)
-- Make sure you ran the initiator script first
-- Check that `session_info.json` exists
-
-### Password Reset Fails
-- Ensure passwords match
-- Use a strong password (8+ characters)
-- Check internet connection
-- Verify session hasn't expired
-
-## 🛡 Limitations
-
-- **Supported Email Domains**: Currently supports Gmail (@gmail.com) and OpenAI (@openai.com) addresses only
-- **Single Session**: One security verification at a time
-- **Time Sensitive**: Temporary security codes expire (usually 15 minutes)
-- **Rate Limited**: Respect Privacy.com's rate limits
 
 ## 🤝 Support
 
