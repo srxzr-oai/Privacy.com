@@ -167,24 +167,14 @@ async def startup_event():
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    """Homepage"""
-    session = get_session(request)
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "session": session
-    })
-
-
 @app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    """Login page"""
-    session = get_session(request)
-    return templates.TemplateResponse("login.html", {
-        "request": request,
-        "session": session,
-        "validated_email": VALIDATED_EMAIL
-    })
+@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/404", response_class=HTMLResponse)
+@app.get("/500", response_class=HTMLResponse)
+async def serve_app(request: Request):
+    """Serve the single-page application"""
+    with open("templates/app.html", "r") as f:
+        return HTMLResponse(content=f.read())
 
 
 @app.post("/login")
@@ -236,30 +226,15 @@ async def logout(request: Request):
     return response
 
 
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    """User dashboard"""
+@app.get("/api/session")
+async def api_get_session(request: Request):
+    """Get current session information"""
     session = get_session(request)
-    
-    # SECURITY: Critical access check - DO NOT MODIFY
-    if "user_email" not in session:
-        return RedirectResponse(url="/login", status_code=302)
-    
-    # SECURITY: Double-check verification status for dashboard access - DO NOT BYPASS
-    if not session.get("security_verified", False):
-        verification_status = check_security_verification_status(session["user_email"])
-        if not verification_status["verification_completed"]:
-            session_id = request.cookies.get("session_id")
-            if session_id and session_id in sessions:
-                del sessions[session_id]
-            return RedirectResponse(url="/login", status_code=302)
-        session["security_verified"] = True
-    
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "session": session,
-        "user_email": session["user_email"]
-    })
+    return {
+        "user_email": session.get("user_email"),
+        "login_time": session.get("login_time"),
+        "security_verified": session.get("security_verified", False)
+    }
 
 
 @app.get("/api/cards")
