@@ -51,11 +51,11 @@ python security_code_initiator.py your.email@gmail.com
 # Step 2: Check your Gmail for the temporary security code, then run:
 python security_code_verifier.py <temporary_code>
 ```
-
+<!-- 
 #### For OpenAI Employees with ChatGPT Agent:
 If you're using a ChatGPT agent with Gmail connector, the agent will automatically:
 - ✅ Detect your @openai.com email address
-- ✅ Complete the entire process hands-free
+- ✅ Complete the entire process hands-free -->
 
 ### 4. **Install Web Application Dependencies**
 ```bash
@@ -409,7 +409,7 @@ If you encounter issues:
 3. **Check network** - Ensure stable internet connection
 4. **Review logs** - Check the timestamp messages for clues
 
-## 🤖 ChatGPT Agent Implementation Notes
+<!-- ## 🤖 ChatGPT Agent Implementation Notes
 
 ### For Agent Developers:
 
@@ -429,12 +429,9 @@ If you encounter issues:
 **Manual Workflow (Regular Users)**:
 1. Provide step-by-step instructions
 2. Guide user through manual email entry and code retrieval
-3. Assist with troubleshooting as needed
+3. Assist with troubleshooting as needed -->
 
 ## 📄 License
 
 This tool is provided as-is for educational and personal use. Please respect Privacy.com's terms of service and API usage policies.
 
-## ⚠️ Disclaimer
-
-This is an unofficial tool and is not affiliated with or endorsed by Privacy.com. Use at your own risk and ensure compliance with Privacy.com's terms of service.
