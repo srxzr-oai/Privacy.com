@@ -1,44 +1,82 @@
 #!/usr/bin/env python3
 """
-Privacy.com Flask Web Application
+Privacy.com FastAPI Web Application
 Main web server for Privacy.com functionality
 """
 
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
-from flask_session import Session
+from fastapi import FastAPI, Request, Form, HTTPException, Depends, Cookie
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, EmailStr
 import os
 import json
 from datetime import datetime, timedelta
 import secrets
 import logging
 import requests
+from typing import Optional, Dict, Any
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+# Initialize FastAPI app
+app = FastAPI(title="Privacy.com Web Application", version="1.0.0")
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Initialize Jinja2 templates
+templates = Jinja2Templates(directory="templates")
 
 # Configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_FILE_DIR'] = './flask_session/'
-app.config['SESSION_PERMANENT'] = False
-app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_KEY_PREFIX'] = 'privacy_com:'
+SECRET_KEY = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
-# Initialize session
-Session(app)
+# Simple in-memory session storage (for demo purposes)
+# In production, use Redis or a proper session backend
+sessions: Dict[str, Dict[str, Any]] = {}
 
 # Create session directory if it doesn't exist
-os.makedirs('./flask_session/', exist_ok=True)
+os.makedirs('./sessions/', exist_ok=True)
 
 # API Configuration
-API_BASE_URL = "http://api.privacy.dev.srxzr.com" # TODO: Change to https://api.privacy.com after later update
+API_BASE_URL = "https://api.privacy.srxzr.com"
 REQUEST_TIMEOUT = 30
 
+# Global validated email from startup
+VALIDATED_EMAIL = ""
 
-def check_password_reset_status(email):
+# Pydantic models
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class CardCreateRequest(BaseModel):
+    name: str
+    limit: float = 100.0
+
+class InstallationCheckRequest(BaseModel):
+    email: str
+
+
+def get_session_id(request: Request) -> str:
+    """Get or create session ID from cookies"""
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+        session_id = secrets.token_hex(32)
+    if session_id not in sessions:
+        sessions[session_id] = {}
+    return session_id
+
+
+def get_session(request: Request) -> Dict[str, Any]:
+    """Get session data"""
+    session_id = get_session_id(request)
+    return sessions.get(session_id, {})
+
+
+def check_password_reset_status(email: str) -> Dict[str, Any]:
     """
     Check if password reset has been completed for the given email
     
@@ -103,205 +141,255 @@ def check_password_reset_status(email):
         }
 
 
-@app.route('/')
-def index():
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
     """Homepage"""
-    return render_template('index.html')
+    session = get_session(request)
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "session": session
+    })
 
 
-@app.route('/dashboard')
-def dashboard():
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Login page"""
+    session = get_session(request)
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "session": session,
+        "validated_email": VALIDATED_EMAIL
+    })
+
+
+@app.post("/login")
+async def login_post(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...)
+):
+    """Handle login form submission"""
+    session_id = get_session_id(request)
+    
+    # Validate input
+    if not email or not password:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "Please provide both email and password",
+            "validated_email": VALIDATED_EMAIL
+        })
+    
+    if not (email.endswith('@gmail.com') or email.endswith('@openai.com')):
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "Please use a Gmail or OpenAI email address",
+            "validated_email": VALIDATED_EMAIL
+        })
+    
+    # Check if this matches the validated email from startup
+    if email != VALIDATED_EMAIL:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": f"Please use the validated email address: {VALIDATED_EMAIL}",
+            "validated_email": VALIDATED_EMAIL
+        })
+    
+    # TODO: Implement actual authentication with Privacy.com API
+    # For now, simple validation since installation was already verified at startup
+    sessions[session_id] = {
+        "user_email": email,
+        "login_time": datetime.now().isoformat(),
+        "reset_verified": True
+    }
+    
+    logger.info(f"User logged in: {email}")
+    
+    response = RedirectResponse(url="/dashboard", status_code=302)
+    response.set_cookie(key="session_id", value=session_id, httponly=True)
+    return response
+
+
+@app.get("/logout")
+async def logout(request: Request):
+    """User logout"""
+    session_id = request.cookies.get("session_id")
+    if session_id and session_id in sessions:
+        email = sessions[session_id].get("user_email", "Unknown")
+        del sessions[session_id]
+        logger.info(f"User logged out: {email}")
+    
+    response = RedirectResponse(url="/", status_code=302)
+    response.delete_cookie("session_id")
+    return response
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request):
     """User dashboard"""
-    if 'user_email' not in session:
-        return redirect(url_for('login'))
+    session = get_session(request)
+    
+    if "user_email" not in session:
+        return RedirectResponse(url="/login", status_code=302)
     
     # Double-check reset status for dashboard access
-    if not session.get('reset_verified', False):
-        reset_status = check_password_reset_status(session['user_email'])
-        if not reset_status['reset_completed']:
-            session.clear()
-            return redirect(url_for('login'))
-        session['reset_verified'] = True
+    if not session.get("reset_verified", False):
+        reset_status = check_password_reset_status(session["user_email"])
+        if not reset_status["reset_completed"]:
+            session_id = request.cookies.get("session_id")
+            if session_id and session_id in sessions:
+                del sessions[session_id]
+            return RedirectResponse(url="/login", status_code=302)
+        session["reset_verified"] = True
     
-    return render_template('dashboard.html', user_email=session['user_email'])
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "session": session,
+        "user_email": session["user_email"]
+    })
 
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    """User login"""
-    validated_email = app.config.get('VALIDATED_EMAIL')
-    
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        # Validate input
-        if not email or not password:
-            return render_template('login.html', error="Please provide both email and password", validated_email=validated_email)
-        
-        if not (email.endswith('@gmail.com') or email.endswith('@openai.com')):
-            return render_template('login.html', error="Please use a Gmail or OpenAI email address", validated_email=validated_email)
-        
-        # Check if this matches the validated email from startup
-        if email != validated_email:
-            error_msg = f"Please use the validated email address: {validated_email}"
-            return render_template('login.html', error=error_msg, validated_email=validated_email)
-        
-        # TODO: Implement actual authentication with Privacy.com API
-        # For now, simple validation since installation was already verified at startup
-        session['user_email'] = email
-        session['login_time'] = datetime.now().isoformat()
-        session['reset_verified'] = True
-        logger.info(f"User logged in: {email}")
-        return redirect(url_for('dashboard'))
-    
-    return render_template('login.html', validated_email=validated_email)
-
-
-@app.route('/logout')
-def logout():
-    """User logout"""
-    email = session.get('user_email', 'Unknown')
-    session.clear()
-    logger.info(f"User logged out: {email}")
-    return redirect(url_for('index'))
-
-
-@app.route('/api/cards')
-def api_cards():
+@app.get("/api/cards")
+async def api_cards(request: Request):
     """API endpoint to get user's virtual cards"""
-    if 'user_email' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
+    session = get_session(request)
+    
+    if "user_email" not in session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     
     # Verify reset status for API access
-    if not session.get('reset_verified', False):
-        return jsonify({'error': 'Installation not completed'}), 403
+    if not session.get("reset_verified", False):
+        raise HTTPException(status_code=403, detail="Installation not completed")
     
     # TODO: Implement actual card retrieval from Privacy.com API
     # Mock data for now
     cards = [
         {
-            'id': 'card_001',
-            'name': 'Shopping Card',
-            'last_four': '1234',
-            'status': 'active',
-            'limit': 500.00,
-            'spent': 123.45,
-            'created_at': '2024-01-15T10:30:00Z'
+            "id": "card_001",
+            "name": "Shopping Card",
+            "last_four": "1234",
+            "status": "active",
+            "limit": 500.00,
+            "spent": 123.45,
+            "created_at": "2024-01-15T10:30:00Z"
         },
         {
-            'id': 'card_002', 
-            'name': 'Subscription Card',
-            'last_four': '5678',
-            'status': 'active',
-            'limit': 100.00,
-            'spent': 29.99,
-            'created_at': '2024-01-10T14:20:00Z'
+            "id": "card_002", 
+            "name": "Subscription Card",
+            "last_four": "5678",
+            "status": "active",
+            "limit": 100.00,
+            "spent": 29.99,
+            "created_at": "2024-01-10T14:20:00Z"
         }
     ]
     
-    return jsonify({'cards': cards})
+    return {"cards": cards}
 
 
-@app.route('/api/transactions')
-def api_transactions():
+@app.get("/api/transactions")
+async def api_transactions(request: Request):
     """API endpoint to get user's transactions"""
-    if 'user_email' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
+    session = get_session(request)
+    
+    if "user_email" not in session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     
     # TODO: Implement actual transaction retrieval from Privacy.com API
     # Mock data for now
     transactions = [
         {
-            'id': 'txn_001',
-            'card_id': 'card_001',
-            'merchant': 'Amazon',
-            'amount': 45.99,
-            'status': 'approved',
-            'created_at': '2024-01-20T16:45:00Z'
+            "id": "txn_001",
+            "card_id": "card_001",
+            "merchant": "Amazon",
+            "amount": 45.99,
+            "status": "approved",
+            "created_at": "2024-01-20T16:45:00Z"
         },
         {
-            'id': 'txn_002',
-            'card_id': 'card_002', 
-            'merchant': 'Netflix',
-            'amount': 15.99,
-            'status': 'approved',
-            'created_at': '2024-01-18T12:00:00Z'
+            "id": "txn_002",
+            "card_id": "card_002", 
+            "merchant": "Netflix",
+            "amount": 15.99,
+            "status": "approved",
+            "created_at": "2024-01-18T12:00:00Z"
         }
     ]
     
-    return jsonify({'transactions': transactions})
+    return {"transactions": transactions}
 
 
-@app.route('/api/create_card', methods=['POST'])
-def api_create_card():
+@app.post("/api/create_card")
+async def api_create_card(request: Request, card_data: CardCreateRequest):
     """API endpoint to create a new virtual card"""
-    if 'user_email' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
+    session = get_session(request)
     
-    data = request.json
-    card_name = data.get('name')
-    card_limit = data.get('limit', 100.00)
+    if "user_email" not in session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     
-    if not card_name:
-        return jsonify({'error': 'Card name is required'}), 400
+    if not card_data.name:
+        raise HTTPException(status_code=400, detail="Card name is required")
     
     # TODO: Implement actual card creation via Privacy.com API
     # Mock response for now
     new_card = {
-        'id': f'card_{secrets.token_hex(4)}',
-        'name': card_name,
-        'last_four': f'{secrets.randbelow(9000) + 1000}',
-        'status': 'active',
-        'limit': float(card_limit),
-        'spent': 0.00,
-        'created_at': datetime.now().isoformat()
+        "id": f"card_{secrets.token_hex(4)}",
+        "name": card_data.name,
+        "last_four": f"{secrets.randbelow(9000) + 1000}",
+        "status": "active",
+        "limit": float(card_data.limit),
+        "spent": 0.00,
+        "created_at": datetime.now().isoformat()
     }
     
     logger.info(f"Created card {new_card['id']} for user {session['user_email']}")
-    return jsonify({'card': new_card})
+    return {"card": new_card}
 
 
-@app.route('/api/check_installation', methods=['POST'])
-def api_check_installation():
+@app.post("/api/check_installation")
+async def api_check_installation(request_data: InstallationCheckRequest):
     """API endpoint to check installation status"""
-    data = request.json
-    email = data.get('email') if data else None
+    if not request_data.email:
+        raise HTTPException(status_code=400, detail="Email is required")
     
-    if not email:
-        return jsonify({'error': 'Email is required'}), 400
-    
-    reset_status = check_password_reset_status(email)
-    return jsonify({
-        'email': email,
-        'installation_completed': reset_status['reset_completed'],
-        'success': reset_status['success'],
-        'error': reset_status.get('error')
-    })
+    reset_status = check_password_reset_status(request_data.email)
+    return {
+        "email": request_data.email,
+        "installation_completed": reset_status["reset_completed"],
+        "success": reset_status["success"],
+        "error": reset_status.get("error")
+    }
 
 
-@app.route('/health')
-def health():
+@app.get("/health")
+async def health():
     """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
-        'version': '1.0.0',
-        'api_base': API_BASE_URL
-    })
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "version": "1.0.0",
+        "api_base": API_BASE_URL
+    }
 
 
-@app.errorhandler(404)
-def not_found(error):
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc):
     """404 error handler"""
-    return render_template('404.html'), 404
+    session = get_session(request)
+    return templates.TemplateResponse("404.html", {
+        "request": request,
+        "session": session
+    }, status_code=404)
 
 
-@app.errorhandler(500)
-def internal_error(error):
+@app.exception_handler(500)
+async def internal_error_handler(request: Request, exc):
     """500 error handler"""
-    logger.error(f"Internal server error: {error}")
-    return render_template('500.html'), 500
+    session = get_session(request)
+    logger.error(f"Internal server error: {exc}")
+    return templates.TemplateResponse("500.html", {
+        "request": request,
+        "session": session
+    }, status_code=500)
 
 
 def validate_installation():
@@ -311,6 +399,8 @@ def validate_installation():
     Returns:
         bool: True if installation is valid, False otherwise
     """
+    global VALIDATED_EMAIL
+    
     print("=" * 60)
     print("Privacy.com Web Application Startup")
     print("=" * 60)
@@ -340,7 +430,7 @@ def validate_installation():
         print(f"🚀 Starting Privacy.com web application for {email}")
         
         # Store the validated email for the application
-        app.config['VALIDATED_EMAIL'] = email
+        VALIDATED_EMAIL = email
         return True
         
     else:
@@ -380,7 +470,7 @@ def validate_installation():
         return False
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Validate installation before starting the server
     if not validate_installation():
         print("\n❌ Application startup cancelled due to incomplete installation.")
@@ -389,18 +479,14 @@ if __name__ == '__main__':
     print("\n" + "=" * 60)
     print("🌐 Starting Privacy.com Web Server")
     print("=" * 60)
-    print("📍 Application will be available at: http://localhost:5000")
-    print("📧 Validated email:", app.config.get('VALIDATED_EMAIL'))
+    print("📍 Application will be available at: http://localhost:8000")
+    print("📧 Validated email:", VALIDATED_EMAIL)
     print("🔄 Press Ctrl+C to stop the server")
     print("=" * 60)
     
     try:
-        # Development server
-        app.run(
-            host='0.0.0.0',
-            port=int(os.environ.get('PORT', 5000)),
-            debug=os.environ.get('FLASK_ENV') == 'development'
-        )
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=8000)
     except KeyboardInterrupt:
         print("\n\n👋 Privacy.com application stopped by user")
     except Exception as e:

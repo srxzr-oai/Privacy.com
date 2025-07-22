@@ -5,7 +5,7 @@ A comprehensive Privacy.com web application built with Flask, featuring secure v
 ## 🚀 Features
 
 ### 🌐 Web Application
-- **Flask Web Server**: Modern web interface for Privacy.com functionality
+- **FastAPI Web Server**: Modern web interface for Privacy.com functionality
 - **Virtual Card Management**: Create, manage, and monitor virtual cards
 - **Transaction Tracking**: Real-time transaction monitoring and history
 - **Dashboard Analytics**: Statistics and insights on spending patterns
@@ -86,7 +86,7 @@ Connecting to Privacy.com API...
 ============================================================
 🌐 Starting Privacy.com Web Server
 ============================================================
-📍 Application will be available at: http://localhost:5000
+📍 Application will be available at: http://localhost:8000
 📧 Validated email: user@gmail.com
 🔄 Press Ctrl+C to stop the server
 ============================================================
@@ -336,8 +336,8 @@ Privacy.com/
 │   ├── utils.py                       # Utility functions
 │   ├── requirements.txt               # Installation dependencies
 │   └── session_info.json             # Temporary session data (auto-generated)
-├── privacy_app/                    # Main Flask web application
-│   ├── app.py                         # Flask application entry point
+├── privacy_app/                    # Main FastAPI web application
+│   ├── app.py                         # FastAPI application entry point
 │   ├── requirements.txt               # Web app dependencies
 │   ├── templates/                     # HTML templates
 │   │   ├── base.html                  # Base template
