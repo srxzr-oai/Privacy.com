@@ -2,7 +2,10 @@
 """
 Privacy.com FastAPI Web Application
 Main web server for Privacy.com functionality
+For development purposes, the API is running on the same server as the web application.
+python app.py 
 """
+
 
 from fastapi import FastAPI, Request, HTTPException, Depends, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
