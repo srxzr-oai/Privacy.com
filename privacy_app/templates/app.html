@@ -53,6 +53,13 @@
 
         async function initializeApp() {
             try {
+                // Health check first - stop loading if backend is unhealthy
+                const isHealthy = await performHealthCheck();
+                if (!isHealthy) {
+                    showHealthCheckError();
+                    return;
+                }
+                
                 // Load session info
                 await loadSessionInfo();
                 
@@ -270,10 +277,169 @@
             loadTemplate(page);
         }
 
+        // Health check function
+        async function performHealthCheck() {
+            try {
+                console.log('🔍 Performing health check...');
+                const response = await fetch(API_BASE_URL + '/health', {
+                    method: 'GET',
+                    timeout: 5000 // 5 second timeout
+                });
+                
+                if (response.ok) {
+                    const healthData = await response.json();
+                    console.log('✅ Health check passed:', healthData);
+                    return true;
+                } else {
+                    console.error('❌ Health check failed with status:', response.status);
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Health check error:', error);
+                return false;
+            }
+        }
+
+        function showHealthCheckError() {
+            document.getElementById('app-container').innerHTML = `
+                <div class="container mt-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8 col-lg-6">
+                            <div class="card border-danger">
+                                <div class="card-body text-center p-5">
+                                    <i class="fas fa-exclamation-triangle fa-4x text-danger mb-4"></i>
+                                    <h2 class="card-title text-danger mb-3">Service Unavailable</h2>
+                                    <p class="card-text lead mb-4">
+                                        Unable to connect to Privacy.com services. The backend server appears to be offline or unreachable.
+                                    </p>
+                                    <div class="alert alert-info mb-4">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Technical Details:</strong><br>
+                                        Backend URL: <code>${API_BASE_URL}</code><br>
+                                        Health check endpoint: <code>${API_BASE_URL}/health</code>
+                                    </div>
+                                    <div class="d-grid gap-2 d-md-block">
+                                        <button class="btn btn-primary" onclick="window.location.reload()">
+                                            <i class="fas fa-redo me-2"></i>Retry
+                                        </button>
+                                        <button class="btn btn-outline-secondary" onclick="showHealthCheckDetails()">
+                                            <i class="fas fa-info me-2"></i>Details
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showHealthCheckDetails() {
+            const detailsModal = `
+                <div class="modal fade" id="healthDetailsModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-heartbeat me-2"></i>Health Check Details
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <h6>What is a Health Check?</h6>
+                                <p class="small text-muted mb-3">
+                                    A health check verifies that the Privacy.com backend services are running and accessible 
+                                    before loading the application.
+                                </p>
+                                
+                                <h6>Troubleshooting Steps:</h6>
+                                <ol class="small">
+                                    <li><strong>Check Internet Connection:</strong> Ensure you have a stable internet connection</li>
+                                    <li><strong>Server Status:</strong> The Privacy.com backend server may be temporarily down</li>
+                                    <li><strong>Firewall/Network:</strong> Corporate firewalls may be blocking the connection</li>
+                                    <li><strong>Browser Cache:</strong> Try clearing your browser cache and cookies</li>
+                                </ol>
+                                
+                                <h6>Configuration:</h6>
+                                <div class="bg-light p-3 rounded">
+                                    <code>
+                                        Template URL: ${TEMPLATE_BASE_URL}<br>
+                                        API URL: ${API_BASE_URL}<br>
+                                        Health Endpoint: ${API_BASE_URL}/health
+                                    </code>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" onclick="window.location.reload()">
+                                    <i class="fas fa-redo me-2"></i>Retry Connection
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', detailsModal);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('healthDetailsModal'));
+            modal.show();
+            
+            // Remove modal from DOM when hidden
+            document.getElementById('healthDetailsModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+        }
+
+        // Periodic health check (every 30 seconds)
+        function startPeriodicHealthCheck() {
+            setInterval(async () => {
+                const isHealthy = await performHealthCheck();
+                if (!isHealthy) {
+                    console.warn('⚠️ Backend health check failed during periodic check');
+                    // Optionally show a non-intrusive warning
+                    showHealthWarning();
+                }
+            }, 30000); // Check every 30 seconds
+        }
+
+        function showHealthWarning() {
+            // Remove existing warning if present
+            const existingWarning = document.getElementById('health-warning');
+            if (existingWarning) {
+                existingWarning.remove();
+            }
+            
+            // Create warning banner
+            const warningBanner = document.createElement('div');
+            warningBanner.id = 'health-warning';
+            warningBanner.className = 'alert alert-warning alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+            warningBanner.style.zIndex = '9999';
+            warningBanner.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Connection Issue:</strong> Backend services may be experiencing issues.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(warningBanner);
+            
+            // Auto-remove after 10 seconds
+            setTimeout(() => {
+                if (warningBanner.parentNode) {
+                    warningBanner.remove();
+                }
+            }, 10000);
+        }
+
         // Handle browser back/forward
         window.addEventListener('popstate', function(event) {
             initializeApp();
         });
+
+        // Start periodic health check after initial load
+        setTimeout(startPeriodicHealthCheck, 10000); // Start after 10 seconds
     </script>
 </body>
 </html> 
