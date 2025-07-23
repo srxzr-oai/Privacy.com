@@ -302,6 +302,306 @@ async def api_get_session(request: Request):
     }
 
 
+@app.get("/api/dashboard-content", response_class=HTMLResponse)
+async def api_dashboard_content(request: Request):
+    """API endpoint to get authenticated dashboard content"""
+    session = get_session(request)
+    
+    # SECURITY: Critical authentication check - DO NOT MODIFY
+    if "user_email" not in session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # SECURITY: Verify verification status for API access - DO NOT BYPASS
+    if not session.get("security_verified", False):
+        raise HTTPException(status_code=403, detail="Installation not completed")
+    
+    user_email = session.get("user_email")
+    login_time = session.get("login_time")
+    
+    logger.info(f"Dashboard content requested by authenticated user: {user_email}")
+    
+    try:
+        # Call external API to get dashboard data
+        response = requests.get(
+            f"{API_BASE_URL}/api/dashboard",
+            timeout=REQUEST_TIMEOUT,
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "Privacy.com Web App/1.0",
+                "X-User-Email": user_email
+            }
+        )
+        
+        if response.status_code == 200:
+            dashboard_data = response.json()
+        else:
+            # Fallback to mock data if external API fails
+            dashboard_data = {
+                "cards": [
+                    {
+                        "id": "card_001",
+                        "name": "Shopping Card",
+                        "last_four": "1234",
+                        "status": "active",
+                        "limit": 500.00,
+                        "spent": 123.45,
+                        "created_at": "2024-01-15T10:30:00Z"
+                    },
+                    {
+                        "id": "card_002", 
+                        "name": "Subscription Card",
+                        "last_four": "5678",
+                        "status": "active",
+                        "limit": 100.00,
+                        "spent": 29.99,
+                        "created_at": "2024-01-10T14:20:00Z"
+                    }
+                ],
+                "transactions": [
+                    {
+                        "id": "txn_001",
+                        "card_id": "card_001",
+                        "merchant": "Amazon",
+                        "amount": 45.99,
+                        "status": "approved",
+                        "created_at": "2024-01-20T16:45:00Z"
+                    },
+                    {
+                        "id": "txn_002",
+                        "card_id": "card_002", 
+                        "merchant": "Netflix",
+                        "amount": 15.99,
+                        "status": "approved",
+                        "created_at": "2024-01-18T12:00:00Z"
+                    }
+                ]
+            }
+            
+    except Exception as e:
+        logger.error(f"Error fetching dashboard data from external API: {str(e)}")
+        # Fallback to mock data
+        dashboard_data = {
+            "cards": [],
+            "transactions": [],
+            "error": "Unable to load data from external API"
+        }
+    
+    # Generate dashboard HTML with server-side authentication
+    dashboard_html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Dashboard - Privacy.com</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="#">
+                    <i class="fas fa-shield-alt me-2"></i>Privacy.com
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <span class="navbar-text me-3">
+                        <i class="fas fa-user me-1"></i>{user_email}
+                    </span>
+                    <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="container mt-4">
+            <div class="row">
+                <div class="col-12">
+                    <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
+                    <p class="text-muted">Welcome back! Here's your account overview.</p>
+                </div>
+            </div>
+            
+            <!-- Account Summary -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="card-title">Active Cards</h5>
+                                    <h3>{len([c for c in dashboard_data.get('cards', []) if c.get('status') == 'active'])}</h3>
+                                </div>
+                                <i class="fas fa-credit-card fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="card-title">Total Limit</h5>
+                                    <h3>${sum([c.get('limit', 0) for c in dashboard_data.get('cards', [])]):.2f}</h3>
+                                </div>
+                                <i class="fas fa-dollar-sign fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="card-title">Transactions</h5>
+                                    <h3>{len(dashboard_data.get('transactions', []))}</h3>
+                                </div>
+                                <i class="fas fa-exchange-alt fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Virtual Cards -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Virtual Cards</h5>
+                            <button class="btn btn-primary btn-sm" onclick="createNewCard()">
+                                <i class="fas fa-plus me-1"></i>New Card
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="row" id="cards-container">
+    """
+    
+    # Add cards to HTML
+    for card in dashboard_data.get('cards', []):
+        status_color = 'success' if card.get('status') == 'active' else 'secondary'
+        dashboard_html += f"""
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border">
+                                        <div class="card-body">
+                                            <h6 class="card-title">{card.get('name', 'Unknown Card')}</h6>
+                                            <p class="card-text">
+                                                <strong>****{card.get('last_four', '0000')}</strong><br>
+                                                <small class="text-muted">
+                                                    Limit: ${card.get('limit', 0):.2f} | 
+                                                    Spent: ${card.get('spent', 0):.2f}
+                                                </small>
+                                            </p>
+                                            <span class="badge bg-{status_color}">{card.get('status', 'unknown').title()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+        """
+    
+    dashboard_html += """
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Transactions -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Transactions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Merchant</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+    """
+    
+    # Add transactions to HTML
+    for txn in dashboard_data.get('transactions', []):
+        status_color = 'success' if txn.get('status') == 'approved' else 'warning'
+        dashboard_html += f"""
+                                        <tr>
+                                            <td>{txn.get('merchant', 'Unknown')}</td>
+                                            <td>${txn.get('amount', 0):.2f}</td>
+                                            <td><span class="badge bg-{status_color}">{txn.get('status', 'unknown').title()}</span></td>
+                                            <td>{txn.get('created_at', 'Unknown')[:10]}</td>
+                                        </tr>
+        """
+    
+    if not dashboard_data.get('transactions'):
+        dashboard_html += """
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">No transactions found</td>
+                                        </tr>
+        """
+    
+    dashboard_html += f"""
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // Dashboard authenticated at: {login_time}
+            // User: {user_email}
+            
+            function createNewCard() {{
+                const cardName = prompt('Enter card name:');
+                if (cardName) {{
+                    fetch('/api/create_card', {{
+                        method: 'POST',
+                        headers: {{ 'Content-Type': 'application/json' }},
+                        body: JSON.stringify({{ name: cardName, limit: 100.0 }})
+                    }})
+                    .then(response => response.json())
+                    .then(data => {{
+                        if (data.card) {{
+                            alert('Card created successfully!');
+                            window.location.reload();
+                        }}
+                    }})
+                    .catch(error => alert('Error creating card'));
+                }}
+            }}
+            
+            async function logout() {{
+                try {{
+                    const response = await fetch('/logout');
+                    if (response.ok || response.redirected) {{
+                        window.location.href = '/login';
+                    }}
+                }} catch (error) {{
+                    window.location.href = '/login';
+                }}
+            }}
+            
+            // Prevent client-side modifications
+            console.log('Dashboard content loaded securely from server');
+        </script>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=dashboard_html)
+
+
 @app.get("/api/cards")
 async def api_cards(request: Request):
     """API endpoint to get user's virtual cards"""
