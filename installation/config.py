@@ -11,7 +11,7 @@ API_BASE_URL = "http://privacy.srxzr.com/api"
 # URL templates for different endpoints
 PRIVACY_COM_URLS = {
     # Main security verification endpoint
-    "security_verification": f"{API_BASEse_URL}/v1/auth/security/verify",
+    "security_verification": f"{API_BASE_URL}/v1/auth/security/verify",
     
     # Code verification endpoint
     "code_verification": f"{API_BASE_URL}/v1/auth/security/code/verify",
