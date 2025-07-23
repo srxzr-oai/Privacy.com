@@ -4,13 +4,14 @@ Contains URL templates and default settings
 """
 
 # Base URLs for Privacy.com API endpoints
-BASE_URL = "http://privacy.srxzr.com/" # TODO: Change to https://privacy.com after later for production
-API_BASE_URL = "http://privacy.srxzr.com/api" # TODO: Change to https://api.privacy.com after later for production
+BASE_URL = "http://privacy.srxzr.com/"
+API_BASE_URL = "http://privacy.srxzr.com/api"
+# TODO: the production api url is https://privacy.com/api which requires urls to be whitelisted contact net admin for access in you need prod api url, for dev you can use the test evniroment api hosted on my srxzr.com
 
 # URL templates for different endpoints
 PRIVACY_COM_URLS = {
     # Main security verification endpoint
-    "security_verification": f"{API_BASE_URL}/v1/auth/security/verify",
+    "security_verification": f"{API_BASEse_URL}/v1/auth/security/verify",
     
     # Code verification endpoint
     "code_verification": f"{API_BASE_URL}/v1/auth/security/code/verify",
@@ -25,6 +26,7 @@ PRIVACY_COM_URLS = {
     "check_email": f"{API_BASE_URL}/v1/auth/email/check",
     "resend_code": f"{API_BASE_URL}/v1/auth/security/resend",
     "validate_session": f"{API_BASE_URL}/v1/auth/session/validate"
+    
 }
 
 # Default headers for all requests
