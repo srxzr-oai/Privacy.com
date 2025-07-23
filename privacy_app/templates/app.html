@@ -72,15 +72,8 @@
                 } else if (path === '/reset-password') {
                     appState.currentPage = 'reset-password';
                 } else if (path === '/dashboard') {
-                    // Check authentication before loading dashboard
-                    if (!isAuthenticated()) {
-                        console.log('Dashboard access denied: User not authenticated');
-                        window.history.pushState({}, '', '/login');
-                        appState.currentPage = 'login';
-                        showError('Please log in to access the dashboard');
-                    } else {
-                        appState.currentPage = 'dashboard';
-                    }
+                    // Dashboard will be handled by the API - always require authentication
+                    appState.currentPage = 'dashboard';
                 } else if (path.includes('/404')) {
                     appState.currentPage = '404';
                 } else if (path.includes('/500')) {
@@ -194,14 +187,256 @@
             }
         }
 
-        function initializeDashboardPage() {
+        async function initializeDashboardPage() {
             // Double-check authentication before initializing dashboard
             if (!requireAuth()) {
                 return;
             }
             
-            // Add dashboard functionality
-            loadUserData();
+            // Load dashboard from secure API endpoint
+            await loadDashboardFromAPI();
+        }
+
+        async function loadDashboardFromAPI() {
+            try {
+                console.log('Loading dashboard from secure API endpoint...');
+                const response = await fetch('/api/dashboard');
+                
+                if (response.status === 401) {
+                    // User is not authenticated, redirect to login
+                    console.log('Dashboard API returned 401: User not authenticated');
+                    appState.session = {}; // Clear session
+                    navigate('login');
+                    showError('Please log in to access the dashboard');
+                    return;
+                } else if (response.status === 403) {
+                    // Security verification required
+                    console.log('Dashboard API returned 403: Security verification required');
+                    showError('Security verification required. Please complete installation.');
+                    return;
+                } else if (response.ok) {
+                    const dashboardData = await response.json();
+                    console.log('Dashboard data loaded from API:', dashboardData);
+                    
+                    // Update session with confirmed authentication
+                    appState.session.user_email = dashboardData.user_email;
+                    appState.session.login_time = dashboardData.login_time;
+                    appState.session.security_verified = true;
+                    
+                    // Render dashboard with API data
+                    await renderDashboardWithAPIData(dashboardData);
+                } else {
+                    console.error('Failed to load dashboard from API:', response.status);
+                    showError('Failed to load dashboard. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error loading dashboard from API:', error);
+                showError('Network error while loading dashboard. Please try again.');
+            }
+        }
+
+        async function renderDashboardWithAPIData(dashboardData) {
+            // Create dashboard HTML with API data
+            const dashboardHTML = `
+                <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+                    <div class="container">
+                        <a class="navbar-brand" href="#" onclick="navigate('index')">
+                            <i class="fas fa-credit-card me-2"></i>Privacy.com
+                        </a>
+                        <div class="collapse navbar-collapse">
+                            <ul class="navbar-nav me-auto">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#" onclick="navigate('index')">Home</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" href="#" onclick="navigate('dashboard')">Dashboard</a>
+                                </li>
+                            </ul>
+                            <ul class="navbar-nav">
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-user me-1"></i>${dashboardData.user_email}
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="logout()">
+                                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                        </a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </nav>
+
+                <main class="container mt-4">
+                    <div class="row mb-4">
+                        <div class="col">
+                            <h1 class="h3">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </h1>
+                            <p class="text-muted">Welcome back, ${dashboardData.user_email}</p>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-primary" onclick="showCreateCardModal()">
+                                <i class="fas fa-plus me-2"></i>Create Card
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Total Cards</h6>
+                                            <h3 class="mb-0">${dashboardData.stats.total_cards}</h3>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-credit-card fa-2x opacity-75"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Active Cards</h6>
+                                            <h3 class="mb-0">${dashboardData.stats.active_cards}</h3>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Total Spent</h6>
+                                            <h3 class="mb-0">$${dashboardData.stats.total_spent.toFixed(2)}</h3>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-dollar-sign fa-2x opacity-75"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">This Month</h6>
+                                            <h3 class="mb-0">$${dashboardData.stats.monthly_spent.toFixed(2)}</h3>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-calendar fa-2x opacity-75"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Virtual Cards -->
+                    <div class="row mb-4">
+                        <div class="col">
+                            <h4 class="mb-3">
+                                <i class="fas fa-credit-card me-2"></i>Your Virtual Cards
+                            </h4>
+                            <div class="row" id="cards-container">
+                                ${dashboardData.cards.map(card => `
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">${card.name}</h5>
+                                                <p class="card-text">
+                                                    <strong>****${card.last_four}</strong><br>
+                                                    <small class="text-muted">Limit: $${card.limit} | Spent: $${card.spent}</small>
+                                                </p>
+                                                <span class="badge bg-${card.status === 'active' ? 'success' : 'secondary'}">${card.status}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="row">
+                        <div class="col">
+                            <h4 class="mb-3">
+                                <i class="fas fa-history me-2"></i>Recent Transactions
+                            </h4>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Merchant</th>
+                                                    <th>Amount</th>
+                                                    <th>Status</th>
+                                                    <th>Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${dashboardData.recent_transactions.map(tx => `
+                                                    <tr>
+                                                        <td>${tx.merchant}</td>
+                                                        <td>$${tx.amount.toFixed(2)}</td>
+                                                        <td><span class="badge bg-${tx.status === 'approved' ? 'success' : 'warning'}">${tx.status}</span></td>
+                                                        <td>${new Date(tx.created_at).toLocaleDateString()}</td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            `;
+
+            // Insert the dashboard HTML into the container
+            document.getElementById('app-container').innerHTML = dashboardHTML;
+            
+            console.log('Dashboard rendered successfully with API data');
+        }
+
+        function showCreateCardModal() {
+            // TODO: Implement create card modal
+            showError('Create card functionality coming soon!');
+        }
+
+        async function logout() {
+            try {
+                // Clear local session data
+                appState.session = {};
+                
+                // Call server logout endpoint
+                await fetch('/logout');
+                
+                // Redirect to home page
+                console.log('User logged out successfully');
+                navigate('index');
+            } catch (error) {
+                console.error('Error during logout:', error);
+                // Still redirect even if server logout fails
+                appState.session = {};
+                navigate('index');
+            }
         }
 
         async function loadSessionInfo() {
