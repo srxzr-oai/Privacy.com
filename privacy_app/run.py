@@ -49,7 +49,7 @@ def main():
     if not check_dependencies():
         sys.exit(1)
     
-    print("\n🔍 Importing application...")
+    print("\n🔍 Testing application import...")
     try:
         from app import app
         print("✅ Application imported successfully")
@@ -67,9 +67,9 @@ def main():
     try:
         import uvicorn
         
-        # Run the server
+        # Run the server using import string for proper reload
         uvicorn.run(
-            app,
+            "app:app",  # Use import string instead of app object
             host="0.0.0.0",
             port=8000,
             reload=True,
