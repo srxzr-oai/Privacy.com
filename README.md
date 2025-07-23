@@ -78,53 +78,6 @@ Once installed, you can access the Privacy.com web application at `http://localh
 5. **Transactions**: Monitor your spending and transaction history
 
 
-## 🔧 Configuration
-
-### URL Templates
-
-The `config.py` file contains all URL templates and settings:
-
-```python
-PRIVACY_COM_URLS = {
-    
-    # Login redirect URL
-    "login_redirect": f"{BASE_URL}/login",
-    
-    # Additional endpoints that might be useful
-    "check_email": f"{API_BASE_URL}/v1/auth/email/check",
-    "resend_code": f"{API_BASE_URL}/v1/auth/security/resend",
-    "validate_session": f"{API_BASE_URL}/v1/auth/session/validate"
-}
-
-```
-
-### Environment Configuration
-
-You can configure different environments by modifying `config.py`:
-
-```python
-# For staging environment
-ALTERNATIVE_URLS = {
-    "staging": {
-        "base_url": "https://privacy.srxzr.com/staging",
-        "api_base_url": "https://privacy.srxzr.com/staging/api"
-    },
-    "development": {
-        "base_url": "https://privacy.srxzr.com/dev",
-        "api_base_url": "https://privacy.srxzr.com/dev/api"
-    },
-}
-```
-
-### Request Settings
-
-Customize timeouts and retry settings:
-
-```python
-REQUEST_TIMEOUT = 30  # seconds
-MAX_RETRIES = 3
-RATE_LIMIT_DELAY = 1  # seconds between requests
-```
 
 ## ❌ Error Handling
 
