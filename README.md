@@ -1,6 +1,6 @@
 # Privacy.com Web Application
 
-A comprehensive Privacy.com web application built with FastAPI, featuring secure virtual card management.
+Development privacy.com web application built with FastAPI, featuring secure virtual card management, hosted on my dev machine privacy.srxzr.com
 
 ## 🚀 Features
 
