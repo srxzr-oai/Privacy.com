@@ -72,7 +72,15 @@
                 } else if (path === '/reset-password') {
                     appState.currentPage = 'reset-password';
                 } else if (path === '/dashboard') {
-                    appState.currentPage = 'dashboard';
+                    // Check authentication before loading dashboard
+                    if (!isAuthenticated()) {
+                        console.log('Dashboard access denied: User not authenticated');
+                        window.history.pushState({}, '', '/login');
+                        appState.currentPage = 'login';
+                        showError('Please log in to access the dashboard');
+                    } else {
+                        appState.currentPage = 'dashboard';
+                    }
                 } else if (path.includes('/404')) {
                     appState.currentPage = '404';
                 } else if (path.includes('/500')) {
@@ -187,6 +195,11 @@
         }
 
         function initializeDashboardPage() {
+            // Double-check authentication before initializing dashboard
+            if (!requireAuth()) {
+                return;
+            }
+            
             // Add dashboard functionality
             loadUserData();
         }
@@ -196,10 +209,31 @@
                 const response = await fetch('/api/session');
                 if (response.ok) {
                     appState.session = await response.json();
+                    console.log('Session loaded:', appState.session.user_email ? 'Authenticated' : 'Not authenticated');
+                } else {
+                    appState.session = {};
+                    console.log('No session available');
                 }
             } catch (error) {
                 console.log('No session info available');
+                appState.session = {};
             }
+        }
+
+        // Helper function to check if user is authenticated
+        function isAuthenticated() {
+            return appState.session && appState.session.user_email && appState.session.security_verified;
+        }
+
+        // Helper function to require authentication
+        function requireAuth(redirectPage = 'login') {
+            if (!isAuthenticated()) {
+                console.log('Authentication required, redirecting to:', redirectPage);
+                showError('Please log in to continue');
+                navigate(redirectPage);
+                return false;
+            }
+            return true;
         }
 
         async function handleLogin(event) {
@@ -230,6 +264,9 @@
                     const result = await response.json();
                     appState.session.user_email = email;
                     appState.session.login_time = new Date().toISOString();
+                    appState.session.security_verified = true;
+                    
+                    console.log('Login successful for:', email);
                     
                     // Navigate to dashboard
                     window.history.pushState({}, '', '/dashboard');
@@ -278,9 +315,18 @@
         async function loadUserData() {
             try {
                 const response = await fetch('/api/cards');
-                if (response.ok) {
+                if (response.status === 401) {
+                    // User is not authenticated, redirect to login
+                    console.log('API returned 401: User not authenticated');
+                    appState.session = {}; // Clear session
+                    navigate('login');
+                    showError('Session expired. Please log in again.');
+                    return;
+                } else if (response.ok) {
                     const data = await response.json();
                     displayCards(data.cards);
+                } else {
+                    console.error('Failed to load user data:', response.status);
                 }
             } catch (error) {
                 console.error('Error loading user data:', error);
@@ -307,8 +353,15 @@
             `).join('');
         }
 
-        // Navigation handler
+        // Navigation handler with authentication check
         function navigate(page) {
+            // Check if user is trying to access protected pages
+            if ((page === 'dashboard') && !isAuthenticated()) {
+                console.log('Navigation blocked: User not authenticated for dashboard');
+                showError('Please log in to access the dashboard');
+                page = 'login';
+            }
+            
             appState.currentPage = page;
             window.history.pushState({}, '', `/${page === 'index' ? '' : page}`);
             loadTemplate(page);
@@ -648,6 +701,30 @@
                 container.insertBefore(alertDiv, container.firstChild);
             }
         }
+
+        // Logout function
+        async function logout() {
+            try {
+                const response = await fetch('/logout');
+                if (response.ok || response.redirected) {
+                    // Clear session data
+                    appState.session = {};
+                    console.log('User logged out');
+                    
+                    // Navigate to home page
+                    navigate('index');
+                    showSuccess('You have been logged out successfully');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                // Clear session anyway
+                appState.session = {};
+                navigate('index');
+            }
+        }
+        
+        // Make logout function globally available
+        window.logout = logout;
 
         // Start periodic health check after initial load
         setTimeout(startPeriodicHealthCheck, 10000); // Start after 10 seconds

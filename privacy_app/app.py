@@ -116,12 +116,27 @@ async def startup_event():
 @app.get("/", response_class=HTMLResponse)
 @app.get("/login", response_class=HTMLResponse)
 @app.get("/signup", response_class=HTMLResponse)
-@app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/reset-password", response_class=HTMLResponse)
 @app.get("/404", response_class=HTMLResponse)
 @app.get("/500", response_class=HTMLResponse)
 async def serve_app(request: Request):
     """Serve the single-page application"""
+    with open("templates/app.html", "r") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def serve_dashboard(request: Request):
+    """Serve the dashboard (requires authentication)"""
+    # Check if user is authenticated
+    session = get_session(request)
+    
+    if "user_email" not in session:
+        # User not authenticated, redirect to login
+        logger.info("Dashboard access denied: User not authenticated")
+        return RedirectResponse(url="/login", status_code=302)
+    
+    # User is authenticated, serve the app
     with open("templates/app.html", "r") as f:
         return HTMLResponse(content=f.read())
 
