@@ -11,14 +11,14 @@
                 <li class="nav-item">
                     <a class="nav-link" href="#" onclick="navigate('index')">Home</a>
                 </li>
-                {{ if session.user_email }}
+                {% if session.user_email %}
                 <li class="nav-item">
                     <a class="nav-link" href="#" onclick="navigate('dashboard')">Dashboard</a>
                 </li>
-                {{ endif }}
+                {% endif %}
             </ul>
             <ul class="navbar-nav">
-                {{ if session.user_email }}
+                {% if session.user_email %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                        data-bs-toggle="dropdown">
@@ -30,13 +30,13 @@
                         </a></li>
                     </ul>
                 </li>
-                {{ else }}
+                {% else %}
                 <li class="nav-item">
                     <a class="nav-link" href="#" onclick="navigate('login')">
                         <i class="fas fa-sign-in-alt me-1"></i>Login
                     </a>
                 </li>
-                {{ endif }}
+                {% endif %}
             </ul>
         </div>
     </div>
@@ -74,11 +74,11 @@
                 <h6>Quick Links</h6>
                 <ul class="list-unstyled">
                     <li><a href="#" onclick="navigate('index')" class="text-muted">Home</a></li>
-                    {{ if session.user_email }}
+                    {% if session.user_email %}
                     <li><a href="#" onclick="navigate('dashboard')" class="text-muted">Dashboard</a></li>
-                    {{ else }}
+                    {% else %}
                     <li><a href="#" onclick="navigate('login')" class="text-muted">Login</a></li>
-                    {{ endif }}
+                    {% endif %}
                 </ul>
             </div>
         </div>
