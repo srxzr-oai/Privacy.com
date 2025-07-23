@@ -524,12 +524,28 @@ def run_validation():
 
 
 if __name__ == "__main__":
-    print("Privacy.com FastAPI Application")
-    print("=" * 60)
-    print("To run the server:")
-    print("  1. Option 1: python -m fastapi dev app.py")
-    print("  2. Option 2: fastapi dev app.py")
-    print("  3. Option 3: python -m fastapi run app.py")
-    print("=" * 60)
-    print("For validation, run: python -c 'from app import run_validation; run_validation()'")
-    print("=" * 60) 
+    import sys
+    
+    # Check if running directly
+    if len(sys.argv) > 1 and sys.argv[1] == "--run":
+        print("Privacy.com FastAPI Application")
+        print("=" * 60)
+        print("🚀 Starting server directly...")
+        try:
+            import uvicorn
+            uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+        except ImportError:
+            print("❌ uvicorn not found. Install with: pip install uvicorn")
+            sys.exit(1)
+        except KeyboardInterrupt:
+            print("\n👋 Server stopped by user")
+    else:
+        print("Privacy.com FastAPI Application")
+        print("=" * 60)
+        print("To run the server (choose one):")
+        print("  1. Direct run:     python app.py --run")
+        print("  2. With uvicorn:   uvicorn app:app --reload")
+        print("  3. Python module: python -m uvicorn app:app --reload")
+        print("=" * 60)
+        print("For validation, run: python -c 'from app import run_validation; run_validation()'")
+        print("=" * 60) 
