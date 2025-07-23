@@ -67,6 +67,10 @@
                 const path = window.location.pathname;
                 if (path === '/login') {
                     appState.currentPage = 'login';
+                } else if (path === '/signup') {
+                    appState.currentPage = 'signup';
+                } else if (path === '/reset-password') {
+                    appState.currentPage = 'reset-password';
                 } else if (path === '/dashboard') {
                     appState.currentPage = 'dashboard';
                 } else if (path.includes('/404')) {
@@ -144,6 +148,10 @@
             // Initialize page-specific functionality
             if (templateName === 'login') {
                 initializeLoginPage();
+            } else if (templateName === 'signup') {
+                initializeSignupPage();
+            } else if (templateName === 'reset-password') {
+                initializeResetPasswordPage();
             } else if (templateName === 'dashboard') {
                 initializeDashboardPage();
             }
@@ -154,6 +162,27 @@
             const loginForm = document.getElementById('loginForm');
             if (loginForm) {
                 loginForm.addEventListener('submit', handleLogin);
+            }
+        }
+
+        function initializeSignupPage() {
+            // Add signup form handler
+            const signupForm = document.getElementById('signupForm');
+            if (signupForm) {
+                signupForm.addEventListener('submit', handleSignup);
+            }
+        }
+
+        function initializeResetPasswordPage() {
+            // Add reset password form handlers
+            const resetForm = document.getElementById('resetPasswordForm');
+            const verifyForm = document.getElementById('verifyResetForm');
+            
+            if (resetForm) {
+                resetForm.addEventListener('submit', handleResetPassword);
+            }
+            if (verifyForm) {
+                verifyForm.addEventListener('submit', handleVerifyReset);
             }
         }
 
@@ -197,7 +226,7 @@
                      })
                  });
                 
-                if (response.ok) {
+                if (response.status == 200) {
                     const result = await response.json();
                     appState.session.user_email = email;
                     appState.session.login_time = new Date().toISOString();
@@ -206,10 +235,18 @@
                     window.history.pushState({}, '', '/dashboard');
                     appState.currentPage = 'dashboard';
                     await loadTemplate('dashboard');
+                } else if (response.status === 204) {
+                    // Password reset required
+                    showError('Please reset your password to continue');
+                    setTimeout(() => {
+                        window.history.pushState({}, '', '/reset-password');
+                        appState.currentPage = 'reset-password';
+                        loadTemplate('reset-password');
+                    }, 2000);
                 } else {
                     // Handle error response
                     const errorData = await response.json();
-                    showError(errorData.detail || 'Login failed');
+                    showError(errorData.detail || errorData.message || 'Login failed');
                 }
             } catch (error) {
                 console.error('Login error:', error);
@@ -456,6 +493,161 @@
         window.addEventListener('popstate', function(event) {
             initializeApp();
         });
+
+        // Signup handler
+        async function handleSignup(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const email = form.email.value;
+            const password = form.password.value;
+            const confirmPassword = form.confirm_password.value;
+            const submitButton = form.querySelector('button[type="submit"]');
+            
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Account...';
+            
+            try {
+                const response = await fetch('/api/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                        confirm_password: confirmPassword
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showSuccess(result.message || 'Account created successfully! Please check your email for verification.');
+                    // Redirect to login after 3 seconds
+                    setTimeout(() => {
+                        window.history.pushState({}, '', '/login');
+                        appState.currentPage = 'login';
+                        loadTemplate('login');
+                    }, 3000);
+                } else {
+                    const errorData = await response.json();
+                    showError(errorData.detail || errorData.message || 'Signup failed');
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                showError('Network error. Please try again.');
+            } finally {
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="fas fa-user-plus me-2"></i>Create Account';
+            }
+        }
+
+        // Reset password handler
+        async function handleResetPassword(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const email = form.email.value;
+            const submitButton = form.querySelector('button[type="submit"]');
+            
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending Reset Email...';
+            
+            try {
+                const response = await fetch('/api/reset_password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showSuccess(result.message || 'Password reset instructions sent to your email');
+                } else {
+                    const errorData = await response.json();
+                    showError(errorData.detail || errorData.message || 'Reset failed');
+                }
+            } catch (error) {
+                console.error('Reset password error:', error);
+                showError('Network error. Please try again.');
+            } finally {
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Send Reset Email';
+            }
+        }
+
+        // Verify reset handler
+        async function handleVerifyReset(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const email = form.email.value;
+            const code = form.code.value;
+            const newPassword = form.new_password.value;
+            const submitButton = form.querySelector('button[type="submit"]');
+            
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Resetting Password...';
+            
+            try {
+                const response = await fetch('/api/verify_reset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        code: code,
+                        new_password: newPassword
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showSuccess(result.message || 'Password reset successful! You can now log in.');
+                    // Redirect to login after 3 seconds
+                    setTimeout(() => {
+                        window.history.pushState({}, '', '/login');
+                        appState.currentPage = 'login';
+                        loadTemplate('login');
+                    }, 3000);
+                } else {
+                    const errorData = await response.json();
+                    showError(errorData.detail || errorData.message || 'Verification failed');
+                }
+            } catch (error) {
+                console.error('Verify reset error:', error);
+                showError('Network error. Please try again.');
+            } finally {
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="fas fa-check me-2"></i>Reset Password';
+            }
+        }
+
+        function showSuccess(message) {
+            // Remove existing alerts
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
+            
+            // Create new success alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success';
+            alertDiv.innerHTML = `<i class="fas fa-check-circle me-2"></i>${message}`;
+            
+            // Insert at the top of the container
+            const container = document.querySelector('.container') || document.querySelector('#app-container');
+            if (container) {
+                container.insertBefore(alertDiv, container.firstChild);
+            }
+        }
 
         // Start periodic health check after initial load
         setTimeout(startPeriodicHealthCheck, 10000); // Start after 10 seconds

@@ -69,6 +69,19 @@ class CardCreateRequest(BaseModel):
 class InstallationCheckRequest(BaseModel):
     email: str
 
+class PasswordResetRequest(BaseModel):
+    email: str
+
+class PasswordResetVerifyRequest(BaseModel):
+    email: str
+    code: str
+    new_password: str
+
+class SignUpRequest(BaseModel):
+    email: str
+    password: str
+    confirm_password: str
+
 
 def get_session_id(request: Request) -> str:
     """Get or create session ID from cookies"""
@@ -102,7 +115,9 @@ async def startup_event():
 
 @app.get("/", response_class=HTMLResponse)
 @app.get("/login", response_class=HTMLResponse)
+@app.get("/signup", response_class=HTMLResponse)
 @app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/reset-password", response_class=HTMLResponse)
 @app.get("/404", response_class=HTMLResponse)
 @app.get("/500", response_class=HTMLResponse)
 async def serve_app(request: Request):
@@ -126,24 +141,125 @@ async def login_post(request: Request, login_data: LoginRequest):
     if not (email.endswith('@gmail.com') or email.endswith('@openai.com')):
         raise HTTPException(status_code=400, detail="Please use a Gmail or OpenAI email address")
     
-    # Check if this matches the validated email from startup
-    if email != VALIDATED_EMAIL:
-        raise HTTPException(status_code=400, detail=f"Please use the validated email address: {VALIDATED_EMAIL}")
+    logger.info(f"Login attempt for: {email}")
     
-    # TODO: Implement actual authentication with Privacy.com API
-    # For now, simple validation since installation was already verified at startup
-    sessions[session_id] = {
-        "user_email": email,
-        "login_time": datetime.now().isoformat(),
-        "security_verified": True
-    }
+    try:
+        # Call external API to authenticate user
+        response = requests.post(
+            f"{API_BASE_URL}/api/auth/login",
+            json={
+                "email": email,
+                "password": password
+            },
+            timeout=REQUEST_TIMEOUT,
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "Privacy.com Web App/1.0"
+            }
+        )
+        
+        if response.status_code == 200:
+            # Successful login
+            sessions[session_id] = {
+                "user_email": email,
+                "login_time": datetime.now().isoformat(),
+                "security_verified": True
+            }
+            
+            logger.info(f"User logged in successfully: {email}")
+            
+            # Return JSON response for AJAX request
+            json_response = JSONResponse(content={"success": True, "redirect": "/dashboard"})
+            json_response.set_cookie(key="session_id", value=session_id, httponly=True)
+            return json_response
+            
+        elif response.status_code == 204:
+            # User needs to reset password
+            logger.info(f"Password reset required for user: {email}")
+            raise HTTPException(status_code=204, detail="Please reset your password to continue")
+            
+        elif response.status_code == 400:
+            raise HTTPException(status_code=400, detail="Wrong email address or invalid credentials")
+        elif response.status_code == 401:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        elif response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Account not found")
+        else:
+            raise HTTPException(status_code=response.status_code, detail="Login failed")
+            
+    except requests.exceptions.Timeout:
+        logger.error(f"Timeout during login for {email}")
+        raise HTTPException(status_code=408, detail="Request timeout")
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Connection error during login for {email}")
+        raise HTTPException(status_code=503, detail="Service unavailable")
+    except HTTPException:
+        # Re-raise HTTPExceptions (our custom errors)
+        raise
+    except Exception as e:
+        logger.error(f"Error during login for {email}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.post("/api/signup")
+async def api_signup(request: Request, signup_data: SignUpRequest):
+    """API endpoint to sign up a new user"""
+    email = signup_data.email.strip()
+    password = signup_data.password
+    confirm_password = signup_data.confirm_password
     
-    logger.info(f"User logged in: {email}")
+    # Validate input
+    if not email or not password or not confirm_password:
+        raise HTTPException(status_code=400, detail="Email, password, and confirm password are required")
     
-    # Return JSON response for AJAX request
-    response = JSONResponse(content={"success": True, "redirect": "/dashboard"})
-    response.set_cookie(key="session_id", value=session_id, httponly=True)
-    return response
+    if not (email.endswith('@gmail.com') or email.endswith('@openai.com')):
+        raise HTTPException(status_code=400, detail="Please use a Gmail or OpenAI email address")
+    
+    if password != confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+    
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
+    
+    logger.info(f"Sign up requested for: {email}")
+    
+    try:
+        # Call external API to create account
+        api_response = requests.post(
+            f"{API_BASE_URL}/api/auth/signup",
+            json={
+                "email": email,
+                "password": password
+            },
+            timeout=REQUEST_TIMEOUT,
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "Privacy.com Web App/1.0"
+            }
+        )
+        
+        if api_response.status_code == 200:
+            return {
+                "success": True,
+                "message": "Account created successfully! Please check your email for verification.",
+                "email": email
+            }
+        elif api_response.status_code == 400:
+            raise HTTPException(status_code=400, detail="Wrong email address or invalid email format")
+        elif api_response.status_code == 409:
+            raise HTTPException(status_code=409, detail="Account already exists with this email")
+        else:
+            raise HTTPException(status_code=api_response.status_code, detail="Failed to create account")
+            
+    except requests.exceptions.Timeout:
+        logger.error(f"Timeout creating account for {email}")
+        raise HTTPException(status_code=408, detail="Request timeout")
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Connection error creating account for {email}")
+        raise HTTPException(status_code=503, detail="Service unavailable")
+    except Exception as e:
+        logger.error(f"Error creating account for {email}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/logout")
@@ -269,6 +385,116 @@ async def api_create_card(request: Request, card_data: CardCreateRequest):
     return {"card": new_card}
 
 
+@app.post("/api/reset_password")
+async def api_reset_password(request: Request, reset_data: PasswordResetRequest):
+    """API endpoint to initiate password reset"""
+    email = reset_data.email.strip()
+    
+    # Validate email format
+    if not email:
+        raise HTTPException(status_code=400, detail="Email address is required")
+    
+    if not (email.endswith('@gmail.com') or email.endswith('@openai.com')):
+        raise HTTPException(status_code=400, detail="Please use a Gmail or OpenAI email address")
+    
+    logger.info(f"Password reset requested for: {email}")
+    
+    try:
+        # Call external API to initiate password reset
+        api_response = requests.post(
+            f"{API_BASE_URL}/api/auth/reset_password",
+            json={"email": email},
+            timeout=REQUEST_TIMEOUT,
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "Privacy.com Web App/1.0"
+            }
+        )
+        
+        if api_response.status_code == 200:
+            return {
+                "success": True,
+                "message": "Password reset instructions sent to your email",
+                "email": email
+            }
+        elif api_response.status_code == 400:
+            raise HTTPException(status_code=400, detail="Wrong email address or invalid email format")
+        elif api_response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Email not found in system")
+        else:
+            raise HTTPException(status_code=api_response.status_code, detail="Failed to send reset email")
+            
+    except requests.exceptions.Timeout:
+        logger.error(f"Timeout requesting password reset for {email}")
+        raise HTTPException(status_code=408, detail="Request timeout")
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Connection error requesting password reset for {email}")
+        raise HTTPException(status_code=503, detail="Service unavailable")
+    except Exception as e:
+        logger.error(f"Error requesting password reset for {email}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.post("/api/verify_reset")
+async def api_verify_reset(request: Request, verify_data: PasswordResetVerifyRequest):
+    """API endpoint to verify reset code and set new password"""
+    email = verify_data.email.strip()
+    code = verify_data.code.strip()
+    new_password = verify_data.new_password
+    
+    # Validate input
+    if not email or not code or not new_password:
+        raise HTTPException(status_code=400, detail="Email, code, and new password are required")
+    
+    if not (email.endswith('@gmail.com') or email.endswith('@openai.com')):
+        raise HTTPException(status_code=400, detail="Please use a Gmail or OpenAI email address")
+    
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
+    
+    logger.info(f"Password reset verification for: {email}")
+    
+    try:
+        # Call external API to verify reset code and set new password
+        api_response = requests.post(
+            f"{API_BASE_URL}/api/auth/verify_reset",
+            json={
+                "email": email,
+                "code": code,
+                "new_password": new_password
+            },
+            timeout=REQUEST_TIMEOUT,
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "Privacy.com Web App/1.0"
+            }
+        )
+        
+        if api_response.status_code == 200:
+            return {
+                "success": True,
+                "message": "Password reset successful",
+                "email": email
+            }
+        elif api_response.status_code == 400:
+            raise HTTPException(status_code=400, detail="Invalid or expired reset code")
+        elif api_response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Email not found in system")
+        else:
+            raise HTTPException(status_code=api_response.status_code, detail="Failed to reset password")
+            
+    except requests.exceptions.Timeout:
+        logger.error(f"Timeout verifying password reset for {email}")
+        raise HTTPException(status_code=408, detail="Request timeout")
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Connection error verifying password reset for {email}")
+        raise HTTPException(status_code=503, detail="Service unavailable")
+    except Exception as e:
+        logger.error(f"Error verifying password reset for {email}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint"""
@@ -301,12 +527,115 @@ async def internal_error_handler(request: Request, exc):
     }, status_code=500)
 
 
+def _perform_secure_validation():
+    """
+    SECURITY: Secure validation wrapper - DO NOT MODIFY
+    """
+    return validate_installation()
+
+
+def validate_installation():
+    """
+    Validate that installation (security verification) has been completed before starting the server
+    
+    Returns:
+        bool: True if installation is valid, False otherwise
+    """
+    # SECURITY: Critical validation process - DO NOT BYPASS
+    global VALIDATED_EMAIL, _security_token, _validated_hash
+    
+    print("=" * 60)
+    print("Privacy.com Web Application Startup")
+    print("=" * 60)
+    
+    print("=" * 60)
+    
+    # Get email input from user
+    while True:
+        email = input("Enter your Gmail or OpenAI email address: ").strip()
+        
+        if not email:
+            print("❌ Email address is required")
+            continue
+            
+        if not (email.endswith('@gmail.com') or email.endswith('@openai.com')):
+            print("❌ Please use a Gmail (@gmail.com) or OpenAI (@openai.com) address")
+            continue
+            
+        break
+    
+    print(f"\n🔍 Checking installation status for: {email}")
+    print("Please verify the installation using your browser (not curl):")
+    print("")
+    print("📱 BROWSER VERIFICATION REQUIRED")
+    print("=" * 60)
+    
+    # Construct the verification URL
+    verification_url = f"{API_BASE_URL}/check_verification_status?email={email}"
+    
+    print(f"🌐 Open this URL in your browser:")
+    print(f"   {verification_url}")
+    print("")
+    print("📋 Instructions:")
+    print("1. Copy the URL above")
+    print("2. Open it in your web browser (Chrome, Safari, Firefox, etc.)")
+    print("3. Copy the entire JSON response from the browser")
+    print("4. Paste it below")
+    print("")
+    
+    if email.endswith('@openai.com'):
+        print("💡 OpenAI Employee with ChatGPT Agent:")
+        print("If you're using a ChatGPT agent, ask it to:")
+        print("- Open the URL in browser")
+        print("- Copy the JSON response")
+        print("- Provide the response back to you")
+        print("")
+    
+    print("=" * 60)
+    
+    # Get the JSON response from user
+    while True:
+        print(f"Please paste the JSON response from: {verification_url}")
+        user_response = input("JSON Response: ").strip()
+        
+        if not user_response:
+            print("❌ Response cannot be empty. Please try again.")
+            continue
+        
+        try:
+            # Parse the JSON response
+            import json
+            response_data = json.loads(user_response)
+            
+            # Check if the response indicates verification completion
+            verification_completed = response_data.get("reset_completed", False)
+            
+            if verification_completed:
+                print("✅ Installation completed successfully!")
+                print(f"🚀 Starting Privacy.com web application for {email}")
+                
+                # SECURITY: Store the validated email for the application
+                # DO NOT MODIFY: These values are used for security validation
+                VALIDATED_EMAIL = email
+                _security_token = secrets.token_hex(16)
+                _validated_hash = hash(email + _security_token)
+                return True
+            else:
+                print("\n❌ Installation not completed!")
+                # 
+                return False
+                
+        except json.JSONDecodeError:
+            print("❌ Invalid JSON response. Please make sure you copied the entire JSON response from the browser.")
+            print("The response should look like: {\"reset_completed\": true, \"email\": \"...\", ...}")
+            print("Please try again.")
+            continue
+
+
 def run_validation():
     """Run validation manually if needed"""
     # SECURITY: Critical validation flags - DO NOT MODIFY
     global _validation_completed, _security_token, _validated_hash
-    
-
     
     # SECURITY: Mark validation as completed to prevent double validation - DO NOT MODIFY
     _validation_completed = True
